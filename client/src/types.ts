@@ -17,6 +17,18 @@ export interface Track {
   description: string;
 }
 
+export interface Artist {
+  id: number;
+  name: string;
+  picture: string;
+  fans: number;
+  albums: number;
+}
+
+export interface ArtistDetail extends Artist {
+  topTracks: Track[];
+}
+
 export const MOOD_COLORS: Record<Mood, string> = {
   happy: "#4fd6a0",
   sad: "#6af1f7",

@@ -1,5 +1,5 @@
 import axios from "axios";
-import { MoodResult, Track } from "@/types";
+import { MoodResult, Track, Artist, ArtistDetail } from "@/types";
 
 const api = axios.create({
   baseURL: "/api",
@@ -46,4 +46,26 @@ export async function searchTracks(
     },
   });
   return data;
+}
+
+export async function searchArtists(query: string): Promise<Artist[]> {
+  const { data } = await api.get<Artist[]>("/tracks/artists", {
+    params: { q: query },
+  });
+  return data;
+}
+
+export async function getArtistDetail(artistId: number): Promise<ArtistDetail> {
+  const { data } = await api.get<ArtistDetail>(`/tracks/artist/${artistId}`);
+  return data;
+}
+
+export async function getLyrics(
+  artist: string,
+  title: string
+): Promise<string | null> {
+  const { data } = await api.get<{ lyrics: string | null }>("/tracks/lyrics", {
+    params: { artist, title },
+  });
+  return data.lyrics;
 }

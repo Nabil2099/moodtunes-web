@@ -7,12 +7,14 @@ interface HeaderProps {
   onTextEntry: () => void;
   onQuestionnaire: () => void;
   onTimeDetect: () => void;
+  onArtistSelect?: (artistId: number) => void;
 }
 
 export default function Header({
   onTextEntry,
   onQuestionnaire,
   onTimeDetect,
+  onArtistSelect,
 }: HeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -41,7 +43,7 @@ export default function Header({
 
           {/* Desktop nav */}
           <nav className="hidden sm:flex items-center gap-2">
-            <SearchBar />
+            <SearchBar onArtistSelect={onArtistSelect} />
             {navItems.map((item) => {
               const Icon = item.icon;
               return (
@@ -65,7 +67,7 @@ export default function Header({
 
           {/* Mobile: search + hamburger */}
           <div className="flex sm:hidden items-center gap-2">
-            <SearchBar />
+            <SearchBar onArtistSelect={onArtistSelect} />
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={() => setMenuOpen(!menuOpen)}

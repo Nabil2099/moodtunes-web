@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Play,
@@ -11,10 +11,13 @@ import {
   ListMusic,
   Volume2,
   VolumeX,
+  MicVocal,
+  Loader2,
 } from "lucide-react";
 import { usePlayerStore, useMoodStore } from "@/store";
 import { MOOD_COLORS } from "@/types";
 import { formatDuration } from "@/lib/utils";
+import { getLyrics } from "@/lib/api";
 
 function PlayerAlbumArt({
   src,
@@ -57,6 +60,7 @@ export default function MiniPlayer() {
     volume,
     isExpanded,
     queue,
+    play,
     togglePlay,
     next,
     previous,
@@ -66,8 +70,32 @@ export default function MiniPlayer() {
   } = usePlayerStore();
   const { currentMood } = useMoodStore();
   const [prevVolume, setPrevVolume] = useState(0.8);
+  const [showLyrics, setShowLyrics] = useState(false);
+  const [showQueue, setShowQueue] = useState(false);
+  const [lyrics, setLyrics] = useState<string | null>(null);
+  const [lyricsLoading, setLyricsLoading] = useState(false);
+  const [lyricsTrackId, setLyricsTrackId] = useState<string | null>(null);
 
   const color = currentMood ? MOOD_COLORS[currentMood] : "#7c6af7";
+
+  // Fetch lyrics when toggled on or track changes
+  useEffect(() => {
+    if (!showLyrics || !currentTrack) return;
+    if (lyricsTrackId === currentTrack.id) return; // already fetched for this track
+    setLyricsLoading(true);
+    setLyrics(null);
+    setLyricsTrackId(currentTrack.id);
+    getLyrics(currentTrack.artist, currentTrack.title)
+      .then((text) => setLyrics(text))
+      .catch(() => setLyrics(null))
+      .finally(() => setLyricsLoading(false));
+  }, [showLyrics, currentTrack, lyricsTrackId]);
+
+  // Reset lyrics state when track changes
+  useEffect(() => {
+    setLyricsTrackId(null);
+    setLyrics(null);
+  }, [currentTrack?.id]);
 
   if (!currentTrack) return null;
 
@@ -220,11 +248,150 @@ export default function MiniPlayer() {
                     : "1 / 1"}
                 </span>
               </div>
-              <div className="w-10" />
+              <div className="flex items-center gap-1">
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => { setShowQueue(!showQueue); if (!showQueue) setShowLyrics(false); }}
+                  className={`w-10 h-10 rounded-full glass flex items-center justify-center transition-colors ${showQueue ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                  style={showQueue ? { backgroundColor: `${color}30` } : {}}
+                >
+                  <ListMusic size={18} />
+                </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => { setShowLyrics(!showLyrics); if (!showLyrics) setShowQueue(false); }}
+                  className={`w-10 h-10 rounded-full glass flex items-center justify-center transition-colors ${showLyrics ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                  style={showLyrics ? { backgroundColor: `${color}30` } : {}}
+                >
+                  <MicVocal size={18} />
+                </motion.button>
+              </div>
             </div>
 
             {/* Main content */}
             <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 sm:px-6 overflow-hidden">
+              <AnimatePresence mode="wait">
+                {showQueue ? (
+                  /* Queue view */
+                  <motion.div
+                    key="queue"
+                    className="w-full max-w-md flex-1 flex flex-col overflow-hidden"
+                    initial={{ opacity: 0, x: 30 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -30 }}
+                    transition={{ duration: 0.25 }}
+                  >
+                    <h3 className="text-xs text-muted-foreground font-mono uppercase tracking-wider mb-3">
+                      Queue ({queue.length} tracks)
+                    </h3>
+                    <div className="flex-1 overflow-y-auto rounded-2xl glass">
+                      {queue.map((track, i) => {
+                        const isCurrent = currentTrack?.id === track.id;
+                        return (
+                          <motion.div
+                            key={track.id}
+                            className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors ${
+                              isCurrent ? "bg-white/10" : "hover:bg-white/5"
+                            }`}
+                            onClick={() => play(track, queue)}
+                            whileTap={{ scale: 0.99 }}
+                          >
+                            <span className="w-6 text-right text-xs text-muted-foreground font-mono flex-shrink-0">
+                              {i + 1}
+                            </span>
+                            <div className="w-9 h-9 rounded-lg overflow-hidden flex-shrink-0">
+                              <PlayerAlbumArt
+                                src={track.albumArt}
+                                alt={track.title}
+                                color={color}
+                                className="w-full h-full"
+                              />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className={`text-sm font-heading truncate ${isCurrent ? "font-bold" : ""}`}>
+                                {track.title}
+                              </p>
+                              <p className="text-xs text-muted-foreground font-mono truncate">
+                                {track.artist}
+                              </p>
+                            </div>
+                            {isCurrent && isPlaying && (
+                              <div className="flex items-center gap-0.5 flex-shrink-0">
+                                {[...Array(3)].map((_, j) => (
+                                  <motion.div
+                                    key={j}
+                                    className="w-0.5 rounded-full"
+                                    style={{ backgroundColor: color }}
+                                    animate={{ height: [4, 12, 4] }}
+                                    transition={{ duration: 0.6, repeat: Infinity, delay: j * 0.15 }}
+                                  />
+                                ))}
+                              </div>
+                            )}
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
+                ) : showLyrics ? (
+                  /* Lyrics view */
+                  <motion.div
+                    key="lyrics"
+                    className="w-full max-w-md flex-1 flex flex-col items-center overflow-hidden"
+                    initial={{ opacity: 0, x: 30 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -30 }}
+                    transition={{ duration: 0.25 }}
+                  >
+                    {/* Small track info */}
+                    <div className="flex items-center gap-3 mb-4 w-full">
+                      <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0">
+                        <PlayerAlbumArt
+                          src={currentTrack.albumArt}
+                          alt={currentTrack.title}
+                          color={color}
+                          className="w-full h-full"
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-heading text-sm font-bold truncate">
+                          {currentTrack.title}
+                        </p>
+                        <p className="text-xs text-muted-foreground font-mono truncate">
+                          {currentTrack.artist}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Lyrics content */}
+                    <div className="flex-1 w-full overflow-y-auto rounded-2xl glass p-4 sm:p-6 mb-4">
+                      {lyricsLoading ? (
+                        <div className="flex items-center justify-center h-full">
+                          <Loader2 size={24} className="animate-spin text-muted-foreground" />
+                        </div>
+                      ) : lyrics ? (
+                        <p className="text-sm leading-7 text-foreground/80 font-mono whitespace-pre-line">
+                          {lyrics}
+                        </p>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+                          <MicVocal size={32} className="mb-3 opacity-30" />
+                          <p className="text-sm font-mono">Lyrics not available</p>
+                          <p className="text-xs mt-1 opacity-60">for this track</p>
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                ) : (
+                  /* Normal player view */
+                  <motion.div
+                    key="player"
+                    className="flex flex-col items-center w-full"
+                    initial={{ opacity: 0, x: -30 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 30 }}
+                    transition={{ duration: 0.25 }}
+                  >
               {/* Album art */}
               <motion.div
                 className="w-48 h-48 sm:w-64 sm:h-64 md:w-72 md:h-72 rounded-3xl overflow-hidden shadow-2xl mb-6 sm:mb-8"
@@ -268,6 +435,9 @@ export default function MiniPlayer() {
                   </p>
                 )}
               </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               {/* Progress bar — clickable to seek */}
               <div className="w-full max-w-sm mb-4 sm:mb-6 px-2">

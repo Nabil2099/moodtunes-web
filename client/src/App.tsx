@@ -9,6 +9,7 @@ import QuestionnaireModal from "@/components/QuestionnaireModal";
 import RecommendationsGrid from "@/components/RecommendationsGrid";
 import MiniPlayer from "@/components/MiniPlayer";
 import MoodHistory from "@/components/MoodHistory";
+import ArtistModal from "@/components/ArtistModal";
 import type { MoodEntry } from "@/components/MoodHistory";
 import { useMoodStore, useTracksStore } from "@/store";
 import { getTimeMood, getTracks } from "@/lib/api";
@@ -18,6 +19,7 @@ import useKeyboardShortcuts from "@/hooks/useKeyboardShortcuts";
 export default function App() {
   const [showQuestionnaire, setShowQuestionnaire] = useState(false);
   const [moodHistory, setMoodHistory] = useState<MoodEntry[]>([]);
+  const [selectedArtistId, setSelectedArtistId] = useState<number | null>(null);
   const { setMoodResult, setAnalyzing, moodResult, method, currentMood } = useMoodStore();
   const { setTracks, setLoading } = useTracksStore();
 
@@ -89,6 +91,7 @@ export default function App() {
         onTextEntry={handleTextEntry}
         onQuestionnaire={handleQuestionnaire}
         onTimeDetect={handleTimeDetect}
+        onArtistSelect={setSelectedArtistId}
       />
 
       <HeroSection
@@ -113,6 +116,11 @@ export default function App() {
       />
 
       <MiniPlayer />
+
+      <ArtistModal
+        artistId={selectedArtistId}
+        onClose={() => setSelectedArtistId(null)}
+      />
 
       {/* Spacer for mini player */}
       <div className="h-20" />

@@ -1,16 +1,28 @@
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, X, Music, Play, Pause, Loader2 } from "lucide-react";
-import { searchTracks } from "@/lib/api";
+import { Search, X, Music, Play, Pause, Loader2, Users, Disc3 } from "lucide-react";
+import { searchTracks, searchArtists } from "@/lib/api";
 import { usePlayerStore, useMoodStore, useTracksStore } from "@/store";
-import { Track, MOOD_COLORS } from "@/types";
+import { Track, Artist, MOOD_COLORS } from "@/types";
 import toast from "react-hot-toast";
 
-export default function SearchBar() {
+function formatNumber(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return String(n);
+}
+
+interface SearchBarProps {
+  onArtistSelect?: (artistId: number) => void;
+}
+
+export default function SearchBar({ onArtistSelect }: SearchBarProps) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Track[]>([]);
+  const [artistResults, setArtistResults] = useState<Artist[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
+  const [activeTab, setActiveTab] = useState<"songs" | "artists">("songs");
   const inputRef = useRef<HTMLInputElement>(null);
   const { currentMood } = useMoodStore();
   const { play, currentTrack, isPlaying, togglePlay } = usePlayerStore();
@@ -25,9 +37,13 @@ export default function SearchBar() {
 
     setIsSearching(true);
     try {
-      const tracks = await searchTracks(trimmed, currentMood || undefined);
+      const [tracks, artists] = await Promise.all([
+        searchTracks(trimmed, currentMood || undefined),
+        searchArtists(trimmed),
+      ]);
       setResults(tracks);
-      if (tracks.length === 0) {
+      setArtistResults(artists);
+      if (tracks.length === 0 && artists.length === 0) {
         toast("No results found", { icon: "🔍" });
       }
     } catch {
@@ -56,7 +72,9 @@ export default function SearchBar() {
   const handleClose = () => {
     setIsOpen(false);
     setResults([]);
+    setArtistResults([]);
     setQuery("");
+    setActiveTab("songs");
   };
 
   return (
@@ -115,6 +133,7 @@ export default function SearchBar() {
                       onClick={() => {
                         setQuery("");
                         setResults([]);
+                        setArtistResults([]);
                         inputRef.current?.focus();
                       }}
                       className="text-muted-foreground hover:text-foreground"
@@ -127,14 +146,54 @@ export default function SearchBar() {
 
               {/* Results */}
               <AnimatePresence>
-                {results.length > 0 && (
+                {(results.length > 0 || artistResults.length > 0) && (
                   <motion.div
-                    className="mt-3 glass rounded-2xl overflow-hidden max-h-[70vh] sm:max-h-[60vh] overflow-y-auto"
+                    className="mt-3 glass rounded-2xl overflow-hidden max-h-[70vh] sm:max-h-[60vh] flex flex-col"
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                   >
+                    {/* Tabs */}
+                    <div className="flex border-b border-white/10">
+                      <button
+                        onClick={() => setActiveTab("songs")}
+                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-xs font-mono transition-colors ${
+                          activeTab === "songs"
+                            ? "text-foreground border-b-2"
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
+                        style={
+                          activeTab === "songs"
+                            ? { borderBottomColor: color }
+                            : {}
+                        }
+                      >
+                        <Music size={14} />
+                        Songs ({results.length})
+                      </button>
+                      <button
+                        onClick={() => setActiveTab("artists")}
+                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-xs font-mono transition-colors ${
+                          activeTab === "artists"
+                            ? "text-foreground border-b-2"
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
+                        style={
+                          activeTab === "artists"
+                            ? { borderBottomColor: color }
+                            : {}
+                        }
+                      >
+                        <Users size={14} />
+                        Artists ({artistResults.length})
+                      </button>
+                    </div>
+
+                    <div className="overflow-y-auto">
+                      {activeTab === "songs" ? (
+                        <>
                     {/* Play all header */}
+                    {results.length > 0 && (
                     <div className="flex items-center justify-between px-5 py-3 border-b border-white/10">
                       <span className="text-xs text-muted-foreground font-mono">
                         {results.length} results
@@ -149,6 +208,7 @@ export default function SearchBar() {
                         Play All
                       </motion.button>
                     </div>
+                    )}
 
                     {results.map((track) => {
                       const isCurrentTrack = currentTrack?.id === track.id;
@@ -208,6 +268,68 @@ export default function SearchBar() {
                         </motion.div>
                       );
                     })}
+                        </>
+                      ) : (
+                        /* Artists tab */
+                        artistResults.length > 0 ? (
+                          artistResults.map((artist) => (
+                            <motion.div
+                              key={artist.id}
+                              className="flex items-center gap-3 px-4 sm:px-5 py-3.5 sm:py-3 hover:bg-white/5 cursor-pointer transition-colors"
+                              onClick={() => {
+                                onArtistSelect?.(artist.id);
+                                handleClose();
+                              }}
+                              whileTap={{ scale: 0.99 }}
+                            >
+                              {/* Artist picture */}
+                              <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0">
+                                {artist.picture ? (
+                                  <img
+                                    src={artist.picture}
+                                    alt={artist.name}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <div
+                                    className="w-full h-full flex items-center justify-center"
+                                    style={{ background: `linear-gradient(135deg, ${color}30, ${color}10)` }}
+                                  >
+                                    <Users size={18} className="text-white/25" />
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Artist info */}
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-heading font-bold truncate">
+                                  {artist.name}
+                                </p>
+                                <div className="flex items-center gap-3 text-xs text-muted-foreground font-mono">
+                                  <span className="flex items-center gap-1">
+                                    <Users size={10} />
+                                    {formatNumber(artist.fans)}
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <Disc3 size={10} />
+                                    {artist.albums} albums
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Arrow */}
+                              <div className="flex-shrink-0 text-muted-foreground">
+                                <Music size={14} />
+                              </div>
+                            </motion.div>
+                          ))
+                        ) : (
+                          <div className="flex items-center justify-center py-12 text-muted-foreground font-mono text-sm">
+                            No artists found
+                          </div>
+                        )
+                      )}
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>
