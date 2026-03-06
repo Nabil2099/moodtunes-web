@@ -1,0 +1,17 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model MoodSession {
+  id        String   @id @default(uuid())
+  userId    String?
+  mood      String
+  method    String
+  confidence Float   @default(0.0)
+  createdAt DateTime @default(now())
+}

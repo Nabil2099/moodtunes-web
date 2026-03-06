@@ -1,0 +1,33 @@
+import axios from "axios";
+import { MoodResult, Track } from "@/types";
+
+const api = axios.create({
+  baseURL: "/api",
+  headers: { "Content-Type": "application/json" },
+});
+
+export async function analyzeMood(text: string): Promise<MoodResult> {
+  const { data } = await api.post<MoodResult>("/mood/analyze", { text });
+  return data;
+}
+
+export async function submitQuestionnaire(
+  answers: string[]
+): Promise<MoodResult> {
+  const { data } = await api.post<MoodResult>("/mood/questionnaire", {
+    answers,
+  });
+  return data;
+}
+
+export async function getTimeMood(): Promise<MoodResult> {
+  const { data } = await api.get<MoodResult>("/mood/time");
+  return data;
+}
+
+export async function getTracks(mood?: string): Promise<Track[]> {
+  const { data } = await api.get<Track[]>("/tracks", {
+    params: mood ? { mood } : {},
+  });
+  return data;
+}
