@@ -8,7 +8,9 @@ const router = Router();
 
 const VALID_MOODS: Mood[] = ["happy", "sad", "energetic", "calm", "focused"];
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openai = process.env.OPENAI_API_KEY
+  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  : null;
 
 // POST /api/mood/analyze
 router.post(
@@ -28,6 +30,7 @@ router.post(
       let confidence = 0.85;
 
       try {
+        if (!openai) throw new Error("No API key");
         const completion = await openai.chat.completions.create({
           model: "gpt-3.5-turbo",
           messages: [
