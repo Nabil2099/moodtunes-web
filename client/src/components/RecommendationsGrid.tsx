@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Pause, Shuffle, Heart, Music, Share2, RefreshCw } from "lucide-react";
+import { Play, Pause, Shuffle, Heart, Music, Share2, RefreshCw, ExternalLink } from "lucide-react";
 import { useTracksStore, usePlayerStore, useMoodStore } from "@/store";
 import { Mood, Track, MOOD_COLORS, MOOD_LABELS, MOOD_EMOJIS } from "@/types";
 import { formatDuration } from "@/lib/utils";
@@ -360,9 +360,24 @@ export default function RecommendationsGrid() {
                         {track.description}
                       </p>
                     )}
-                    <p className="text-xs font-mono mt-2" style={{ color }}>
-                      {formatDuration(track.duration)}
-                    </p>
+                    <div className="flex items-center justify-between mt-2">
+                      <p className="text-xs font-mono" style={{ color }}>
+                        {formatDuration(track.duration)}
+                      </p>
+                      {track.id.startsWith("dz-") && (
+                        <a
+                          href={`https://www.deezer.com/track/${track.id.slice(3)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="flex items-center gap-1 text-[10px] font-mono text-muted-foreground hover:text-foreground transition-colors"
+                          title="Listen full song on Deezer"
+                        >
+                          <ExternalLink size={10} />
+                          Full Song
+                        </a>
+                      )}
+                    </div>
                   </div>
                 </motion.div>
               );

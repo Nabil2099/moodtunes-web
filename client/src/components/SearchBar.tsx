@@ -1,6 +1,6 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, X, Music, Play, Pause, Loader2, Users, Disc3 } from "lucide-react";
+import { Search, X, Music, Play, Pause, Loader2, Users, Disc3, ExternalLink } from "lucide-react";
 import { searchTracks, searchArtists } from "@/lib/api";
 import { usePlayerStore, useMoodStore, useTracksStore } from "@/store";
 import { Track, Artist, MOOD_COLORS } from "@/types";
@@ -29,28 +29,50 @@ export default function SearchBar({ onArtistSelect }: SearchBarProps) {
   const { setTracks } = useTracksStore();
 
   const color = currentMood ? MOOD_COLORS[currentMood] : "#7c6af7";
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const trimmed = query.trim();
-    if (!trimmed) return;
-
+  const doSearch = useCallback(async (q: string) => {
+    if (!q.trim()) {
+      setResults([]);
+      setArtistResults([]);
+      return;
+    }
     setIsSearching(true);
     try {
       const [tracks, artists] = await Promise.all([
-        searchTracks(trimmed, currentMood || undefined),
-        searchArtists(trimmed),
+        searchTracks(q.trim(), currentMood || undefined),
+        searchArtists(q.trim()),
       ]);
       setResults(tracks);
       setArtistResults(artists);
-      if (tracks.length === 0 && artists.length === 0) {
-        toast("No results found", { icon: "🔍" });
-      }
     } catch {
-      toast.error("Search failed");
+      // silent fail for suggestions
     } finally {
       setIsSearching(false);
     }
+  }, [currentMood]);
+
+  // Debounced auto-search as user types
+  useEffect(() => {
+    if (!isOpen) return;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (!query.trim()) {
+      setResults([]);
+      setArtistResults([]);
+      return;
+    }
+    debounceRef.current = setTimeout(() => {
+      doSearch(query);
+    }, 350);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [query, isOpen, doSearch]);
+
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    doSearch(query);
   };
 
   const handlePlayTrack = (track: Track) => {
@@ -105,14 +127,14 @@ export default function SearchBar({ onArtistSelect }: SearchBarProps) {
           >
             {/* Backdrop */}
             <div
-              className="absolute inset-0 bg-black/80 backdrop-blur-xl"
+              className="absolute inset-0 bg-[#0a0a14]/95 backdrop-blur-2xl"
               onClick={handleClose}
             />
 
             <div className="relative z-10 w-full max-w-2xl mx-auto mt-4 sm:mt-20 px-4 safe-top">
               {/* Search input */}
               <form onSubmit={handleSearch}>
-                <div className="flex items-center gap-3 glass rounded-2xl px-4 sm:px-5 py-3 sm:py-4">
+                <div className="flex items-center gap-3 bg-[#12121e] border border-white/10 rounded-2xl px-4 sm:px-5 py-3 sm:py-4">
                   {isSearching ? (
                     <Loader2 size={20} className="text-muted-foreground animate-spin" />
                   ) : (
@@ -148,7 +170,7 @@ export default function SearchBar({ onArtistSelect }: SearchBarProps) {
               <AnimatePresence>
                 {(results.length > 0 || artistResults.length > 0) && (
                   <motion.div
-                    className="mt-3 glass rounded-2xl overflow-hidden max-h-[70vh] sm:max-h-[60vh] flex flex-col"
+                    className="mt-3 bg-[#12121e] border border-white/10 rounded-2xl overflow-hidden max-h-[70vh] sm:max-h-[60vh] flex flex-col"
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
@@ -247,8 +269,20 @@ export default function SearchBar({ onArtistSelect }: SearchBarProps) {
                             </p>
                           </div>
 
-                          {/* Play indicator */}
-                          <div className="flex-shrink-0">
+                          {/* Actions */}
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            {track.id.startsWith("dz-") && (
+                              <a
+                                href={`https://www.deezer.com/track/${track.id.slice(3)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="w-7 h-7 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-white/10 transition-colors"
+                                title="Listen full song on Deezer"
+                              >
+                                <ExternalLink size={12} />
+                              </a>
+                            )}
                             {isCurrentTrack && isPlaying ? (
                               <div className="flex items-center gap-0.5">
                                 {[...Array(3)].map((_, i) => (

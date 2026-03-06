@@ -13,6 +13,7 @@ import {
   VolumeX,
   MicVocal,
   Loader2,
+  ExternalLink,
 } from "lucide-react";
 import { usePlayerStore, useMoodStore } from "@/store";
 import { MOOD_COLORS } from "@/types";
@@ -429,8 +430,19 @@ export default function MiniPlayer() {
                 <p className="text-muted-foreground font-mono text-sm mb-2">
                   {currentTrack.artist}
                 </p>
+                {currentTrack.id.startsWith("dz-") && (
+                  <a
+                    href={`https://www.deezer.com/track/${currentTrack.id.slice(3)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono glass text-muted-foreground hover:text-foreground transition-colors mt-1"
+                  >
+                    <ExternalLink size={12} />
+                    Listen Full on Deezer
+                  </a>
+                )}
                 {currentTrack.description && (
-                  <p className="text-xs text-muted-foreground/60 line-clamp-2 leading-relaxed">
+                  <p className="text-xs text-muted-foreground/60 line-clamp-2 leading-relaxed mt-1">
                     {currentTrack.description}
                   </p>
                 )}
