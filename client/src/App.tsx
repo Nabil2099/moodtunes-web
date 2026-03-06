@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { Toaster } from "react-hot-toast";
 import toast from "react-hot-toast";
 import FloatingNotes from "@/components/FloatingNotes";
+import Header from "@/components/Header";
 import HeroSection from "@/components/HeroSection";
 import MoodInput from "@/components/MoodInput";
 import QuestionnaireModal from "@/components/QuestionnaireModal";
@@ -11,16 +12,12 @@ import { useMoodStore, useTracksStore } from "@/store";
 import { getTimeMood, getTracks } from "@/lib/api";
 
 export default function App() {
-  const [showMoodInput, setShowMoodInput] = useState(false);
   const [showQuestionnaire, setShowQuestionnaire] = useState(false);
   const { setMoodResult, setAnalyzing } = useMoodStore();
   const { setTracks, setLoading } = useTracksStore();
 
   const handleTextEntry = useCallback(() => {
-    setShowMoodInput(true);
-    setTimeout(() => {
-      document.getElementById("mood-input")?.scrollIntoView({ behavior: "smooth" });
-    }, 100);
+    document.getElementById("mood-input")?.scrollIntoView({ behavior: "smooth" });
   }, []);
 
   const handleQuestionnaire = useCallback(() => {
@@ -38,7 +35,6 @@ export default function App() {
       const tracks = await getTracks(result.mood);
       setTracks(tracks);
 
-      setShowMoodInput(true);
       setTimeout(() => {
         document
           .getElementById("recommendations")
@@ -54,13 +50,20 @@ export default function App() {
     <div className="relative min-h-screen">
       <FloatingNotes />
 
+      <Header
+        onTextEntry={handleTextEntry}
+        onQuestionnaire={handleQuestionnaire}
+        onTimeDetect={handleTimeDetect}
+      />
+
       <HeroSection
         onTextEntry={handleTextEntry}
         onQuestionnaire={handleQuestionnaire}
         onTimeDetect={handleTimeDetect}
       />
 
-      {showMoodInput && <MoodInput />}
+      {/* Always visible — user can type anytime */}
+      <MoodInput />
 
       <QuestionnaireModal
         isOpen={showQuestionnaire}
