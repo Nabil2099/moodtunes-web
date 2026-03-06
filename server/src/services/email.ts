@@ -1,4 +1,4 @@
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 import crypto from "crypto";
 
 // Generate a 6-digit OTP
@@ -6,26 +6,9 @@ export function generateOTP(): string {
   return crypto.randomInt(100000, 999999).toString();
 }
 
-// Create transporter — uses SMTP env vars in production, logs to console in dev
-function createTransporter() {
-  const host = process.env.SMTP_HOST;
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
-
-  if (host && user && pass) {
-    return nodemailer.createTransport({
-      host,
-      port: parseInt(process.env.SMTP_PORT || "587", 10),
-      secure: process.env.SMTP_SECURE === "true",
-      auth: { user, pass },
-    });
-  }
-
-  // Dev fallback: log to console
-  return null;
-}
-
-const transporter = createTransporter();
+const resend = process.env.RESEND_API_KEY
+  ? new Resend(process.env.RESEND_API_KEY)
+  : null;
 
 export async function sendOTPEmail(email: string, otp: string): Promise<void> {
   const html = `
@@ -45,13 +28,14 @@ export async function sendOTPEmail(email: string, otp: string): Promise<void> {
     </div>
   `;
 
-  if (transporter) {
-    await transporter.sendMail({
-      from: process.env.SMTP_FROM || process.env.SMTP_USER,
+  if (resend) {
+    const { error } = await resend.emails.send({
+      from: "MoodTunes <onboarding@resend.dev>",
       to: email,
       subject: "MoodTunes — Your Verification Code",
       html,
     });
+    if (error) throw new Error(error.message);
   } else {
     // Dev: log OTP to console
     console.log(`\n📧 OTP for ${email}: ${otp}\n`);
