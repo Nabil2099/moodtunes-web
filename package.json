@@ -7,7 +7,7 @@
     "dev:server": "cd server && npm run dev",
     "dev:client": "cd client && npm run dev",
     "install:all": "npm install && cd server && npm install && cd ../client && npm install",
-    "build": "cd client && npm run build && cd ../server && npm run build",
+    "build": "cd client && npm install && npm run build && cd ../server && npm install && npx prisma generate && npx prisma db push && npm run build",
     "start": "cd server && node dist/index.js",
     "production": "npm run build && NODE_ENV=production npm start"
   },
