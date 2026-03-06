@@ -166,6 +166,11 @@ export default function RecommendationsGrid() {
                   <p className="text-xs text-muted-foreground font-mono mt-1 truncate">
                     {track.artist}
                   </p>
+                  {track.description && (
+                    <p className="text-xs text-muted-foreground/70 mt-1 line-clamp-2 leading-relaxed">
+                      {track.description}
+                    </p>
+                  )}
                   <p className="text-xs font-mono mt-2" style={{ color }}>
                     {formatDuration(track.duration)}
                   </p>

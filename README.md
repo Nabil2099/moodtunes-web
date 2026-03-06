@@ -3,7 +3,7 @@
 An AI-powered music player that detects your mood and curates the perfect playlist.
 
 ## Features
-- **Text Analysis** — Describe your feelings, AI detects your mood (OpenAI or keyword fallback)
+- **Text Analysis** — Describe your feelings, custom ML classifier detects your mood
 - **5-Question Quiz** — Answer emoji-based questions to uncover your vibe
 - **Time-Based** — Automatic mood detection based on time of day
 - **100+ Mock Tracks** — 20 tracks per mood (happy, sad, energetic, calm, focused)
@@ -11,7 +11,7 @@ An AI-powered music player that detects your mood and curates the perfect playli
 
 ## Tech Stack
 - **Frontend**: React 18 + Vite + TypeScript + Tailwind CSS + Framer Motion + Zustand
-- **Backend**: Node.js + Express + TypeScript + Prisma (SQLite) + OpenAI API
+- **Backend**: Node.js + Express + TypeScript + Prisma (SQLite) + Custom ML Classifier
 
 ## Getting Started
 
@@ -31,10 +31,6 @@ npm run install:all
 
 # Set up the database
 cd server && npx prisma db push && cd ..
-
-# (Optional) Add your OpenAI API key in server/.env
-# OPENAI_API_KEY=sk-...
-# The app works without it using keyword-based fallback
 
 # Start dev server (client + server)
 npm run dev
@@ -59,7 +55,6 @@ Create `server/.env`:
 ```
 PORT=3001
 DATABASE_URL="file:./dev.db"
-OPENAI_API_KEY=your_key_here
 ```
 
 ## Deployment
@@ -79,7 +74,7 @@ in the sections below.
 4. Settings:
    - Build command: `cd client && npm install && npm run build && cd ../server && npm install && npx prisma generate && npx prisma db push && npm run build`
    - Start command: `cd server && node dist/index.js`
-   - Environment variables: `OPENAI_API_KEY`, `DATABASE_URL=file:./dev.db`, `PORT=3001`, `NODE_ENV=production`
+   - Environment variables: `DATABASE_URL=file:./dev.db`, `PORT=3001`, `NODE_ENV=production`
 
 ### Deploy to Railway
 

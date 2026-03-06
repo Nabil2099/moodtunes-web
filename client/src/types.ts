@@ -14,6 +14,7 @@ export interface Track {
   duration: number;
   mood: Mood;
   previewUrl: string;
+  description: string;
 }
 
 export const MOOD_COLORS: Record<Mood, string> = {

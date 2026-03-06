@@ -2,33 +2,11 @@ import { Router, Request, Response } from "express";
 import { body, validationResult } from "express-validator";
 import prisma from "../lib/prisma";
 import { Mood, MoodResult, MOOD_COLORS } from "../types";
+import { classifyMood } from "../ml/classifier";
 
 const router = Router();
 
-const VALID_MOODS: Mood[] = ["happy", "sad", "energetic", "calm", "focused"];
-
-async function callOpenAI(text: string): Promise<Mood | null> {
-  if (!process.env.OPENAI_API_KEY) return null;
-  const { default: OpenAI } = await import("openai");
-  const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-  const completion = await client.chat.completions.create({
-    model: "gpt-3.5-turbo",
-    messages: [
-      {
-        role: "user",
-        content: `Analyze the mood of this text and return ONLY one of: happy, sad, energetic, calm, focused. Text: ${text}`,
-      },
-    ],
-    max_tokens: 10,
-    temperature: 0.3,
-  });
-  const result = completion.choices[0]?.message?.content
-    ?.trim()
-    .toLowerCase() as Mood;
-  return VALID_MOODS.includes(result) ? result : null;
-}
-
-// POST /api/mood/analyze
+// POST /api/mood/analyze — uses custom ML classifier (no external APIs)
 router.post(
   "/analyze",
   [body("text").isString().trim().isLength({ min: 1, max: 1000 })],
@@ -42,33 +20,9 @@ router.post(
     try {
       const { text } = req.body;
 
-      let mood: Mood = "calm";
-      let confidence = 0.85;
-
-      try {
-        const aiMood = await callOpenAI(text);
-        if (aiMood) {
-          mood = aiMood;
-          confidence = 0.92;
-        } else {
-          throw new Error("fallback");
-        }
-      } catch {
-        // Fallback: simple keyword-based mood detection
-        const lower = text.toLowerCase();
-        if (/happy|joy|great|amazing|wonderful|excited|love/.test(lower)) {
-          mood = "happy";
-        } else if (/sad|depressed|down|lonely|miss|cry|hurt/.test(lower)) {
-          mood = "sad";
-        } else if (/energy|pump|workout|run|fast|power|strong/.test(lower)) {
-          mood = "energetic";
-        } else if (/focus|work|study|concentrate|productive|think/.test(lower)) {
-          mood = "focused";
-        } else {
-          mood = "calm";
-        }
-        confidence = 0.75;
-      }
+      const classification = classifyMood(text);
+      const mood: Mood = classification.mood;
+      const confidence = classification.confidence;
 
       await prisma.moodSession.create({
         data: { mood, method: "text", confidence },
