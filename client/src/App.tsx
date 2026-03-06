@@ -10,20 +10,44 @@ import RecommendationsGrid from "@/components/RecommendationsGrid";
 import MiniPlayer from "@/components/MiniPlayer";
 import MoodHistory from "@/components/MoodHistory";
 import ArtistModal from "@/components/ArtistModal";
+import AuthModal from "@/components/AuthModal";
+import AIDashboard from "@/components/AIDashboard";
 import type { MoodEntry } from "@/components/MoodHistory";
-import { useMoodStore, useTracksStore } from "@/store";
-import { getTimeMood, getTracks } from "@/lib/api";
+import { useMoodStore, useTracksStore, usePlayerStore } from "@/store";
+import { useAuthStore } from "@/store/auth";
+import { getTimeMood, getTracks, logListeningHistory } from "@/lib/api";
 import { MOOD_COLORS } from "@/types";
 import useKeyboardShortcuts from "@/hooks/useKeyboardShortcuts";
 
 export default function App() {
   const [showQuestionnaire, setShowQuestionnaire] = useState(false);
+  const [showAIDashboard, setShowAIDashboard] = useState(false);
   const [moodHistory, setMoodHistory] = useState<MoodEntry[]>([]);
   const [selectedArtistId, setSelectedArtistId] = useState<number | null>(null);
   const { setMoodResult, setAnalyzing, moodResult, method, currentMood } = useMoodStore();
   const { setTracks, setLoading } = useTracksStore();
+  const { currentTrack } = usePlayerStore();
+  const { initialize, user } = useAuthStore();
 
   useKeyboardShortcuts();
+
+  // Initialize auth on mount
+  useEffect(() => {
+    initialize();
+  }, []);
+
+  // Track listening history when track changes
+  useEffect(() => {
+    if (currentTrack && user) {
+      logListeningHistory({
+        trackId: currentTrack.id,
+        trackTitle: currentTrack.title,
+        artistName: currentTrack.artist,
+        mood: currentTrack.mood,
+        duration: currentTrack.duration,
+      }).catch(() => {});
+    }
+  }, [currentTrack?.id, user]);
 
   // Track mood history
   useEffect(() => {
@@ -36,7 +60,7 @@ export default function App() {
           confidence: moodResult.confidence,
           timestamp: Date.now(),
         },
-        ...prev.slice(0, 19), // keep last 20
+        ...prev.slice(0, 19),
       ]);
     }
   }, [moodResult, method]);
@@ -92,6 +116,7 @@ export default function App() {
         onQuestionnaire={handleQuestionnaire}
         onTimeDetect={handleTimeDetect}
         onArtistSelect={setSelectedArtistId}
+        onInsightsClick={() => setShowAIDashboard(true)}
       />
 
       <HeroSection
@@ -120,6 +145,13 @@ export default function App() {
       <ArtistModal
         artistId={selectedArtistId}
         onClose={() => setSelectedArtistId(null)}
+      />
+
+      <AuthModal />
+
+      <AIDashboard
+        isOpen={showAIDashboard}
+        onClose={() => setShowAIDashboard(false)}
       />
 
       {/* Spacer for mini player */}

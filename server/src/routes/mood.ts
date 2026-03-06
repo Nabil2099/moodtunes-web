@@ -25,8 +25,9 @@ router.post(
       const confidence = classification.confidence;
 
       // Fire-and-forget: don't block response if DB is unavailable
+      const userId = (req as any).user?.userId;
       prisma.moodSession.create({
-        data: { mood, method: "text", confidence },
+        data: { mood, method: "text", confidence, userId },
       }).catch(() => {});
 
       const result: MoodResult = {
@@ -101,8 +102,9 @@ router.post(
 
       const confidence = Math.min(0.95, 0.6 + moodScores[mood] * 0.1);
 
+      const userId = (req as any).user?.userId;
       prisma.moodSession.create({
-        data: { mood, method: "questionnaire", confidence },
+        data: { mood, method: "questionnaire", confidence, userId },
       }).catch(() => {});
 
       const result: MoodResult = {
@@ -120,7 +122,7 @@ router.post(
 );
 
 // GET /api/mood/time
-router.get("/time", async (_req: Request, res: Response): Promise<void> => {
+router.get("/time", async (req: Request, res: Response): Promise<void> => {
   try {
     const hour = new Date().getHours();
     let mood: Mood;
@@ -137,8 +139,9 @@ router.get("/time", async (_req: Request, res: Response): Promise<void> => {
 
     const confidence = 0.8;
 
+    const userId = (req as any).user?.userId;
     prisma.moodSession.create({
-      data: { mood, method: "time", confidence },
+      data: { mood, method: "time", confidence, userId },
     }).catch(() => {});
 
     const result: MoodResult = {

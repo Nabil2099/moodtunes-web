@@ -1,13 +1,15 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageSquare, ClipboardList, Clock, Menu, X } from "lucide-react";
+import { MessageSquare, ClipboardList, Clock, Menu, X, Brain } from "lucide-react";
 import SearchBar from "@/components/SearchBar";
+import UserMenu from "@/components/UserMenu";
 
 interface HeaderProps {
   onTextEntry: () => void;
   onQuestionnaire: () => void;
   onTimeDetect: () => void;
   onArtistSelect?: (artistId: number) => void;
+  onInsightsClick: () => void;
 }
 
 export default function Header({
@@ -15,6 +17,7 @@ export default function Header({
   onQuestionnaire,
   onTimeDetect,
   onArtistSelect,
+  onInsightsClick,
 }: HeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -63,11 +66,22 @@ export default function Header({
                 </motion.button>
               );
             })}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={onInsightsClick}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-mono text-muted-foreground hover:text-foreground hover:bg-white/5 transition-all cursor-pointer"
+            >
+              <Brain size={14} />
+              <span>AI</span>
+            </motion.button>
+            <UserMenu onInsightsClick={onInsightsClick} />
           </nav>
 
-          {/* Mobile: search + hamburger */}
+          {/* Mobile: search + user + hamburger */}
           <div className="flex sm:hidden items-center gap-2">
             <SearchBar onArtistSelect={onArtistSelect} />
+            <UserMenu onInsightsClick={onInsightsClick} />
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={() => setMenuOpen(!menuOpen)}

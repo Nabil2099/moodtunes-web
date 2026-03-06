@@ -29,6 +29,56 @@ export interface ArtistDetail extends Artist {
   topTracks: Track[];
 }
 
+// ─── Auth types ───
+export interface User {
+  id: string;
+  email: string;
+  name: string | null;
+  avatar: string | null;
+  createdAt: string;
+  _count?: {
+    listeningHistory: number;
+    favorites: number;
+    moodSessions: number;
+  };
+}
+
+// ─── AI types ───
+export interface TasteProfile {
+  moodDistribution: Record<Mood, number>;
+  topArtists: { name: string; count: number }[];
+  totalListens: number;
+  favoriteCount: number;
+  avgMood: Mood;
+  timePreferences: Record<string, Mood>;
+}
+
+export interface MoodInsights {
+  currentStreak: { mood: Mood; count: number } | null;
+  moodDistribution: Record<Mood, number>;
+  totalSessions: number;
+  mostFrequentMood: Mood;
+  recentTrend: "improving" | "declining" | "stable" | "varied";
+  topArtists: { name: string; count: number }[];
+  listensByDay: { day: string; count: number }[];
+}
+
+export interface DJJourney {
+  journey: Mood[];
+  steps: { step: number; mood: Mood; tracks: Track[] }[];
+  totalTracks: number;
+}
+
+export interface ForYouResponse {
+  mood: Mood;
+  tracks: Track[];
+  profile: {
+    topArtists: { name: string; count: number }[];
+    avgMood: Mood;
+    totalListens: number;
+  };
+}
+
 export const MOOD_COLORS: Record<Mood, string> = {
   happy: "#4fd6a0",
   sad: "#6af1f7",

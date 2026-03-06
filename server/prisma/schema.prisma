@@ -7,11 +7,67 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model MoodSession {
+model User {
   id        String   @id @default(uuid())
-  userId    String?
-  mood      String
-  method    String
-  confidence Float   @default(0.0)
+  email     String   @unique
+  name      String?
+  avatar    String?
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  moodSessions     MoodSession[]
+  listeningHistory ListeningHistory[]
+  favorites        UserFavorite[]
+}
+
+model OtpCode {
+  id        String   @id @default(uuid())
+  email     String
+  code      String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([email, code])
+}
+
+model MoodSession {
+  id         String   @id @default(uuid())
+  userId     String?
+  mood       String
+  method     String
+  confidence Float    @default(0.0)
+  createdAt  DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+}
+
+model ListeningHistory {
+  id         String   @id @default(uuid())
+  userId     String
+  trackId    String
+  trackTitle String
+  artistName String
+  mood       String
+  duration   Int      @default(0)
+  playedAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, playedAt])
+}
+
+model UserFavorite {
+  id         String   @id @default(uuid())
+  userId     String
+  trackId    String
+  trackTitle String
+  artistName String
+  albumArt   String   @default("")
+  mood       String
+  addedAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, trackId])
 }
