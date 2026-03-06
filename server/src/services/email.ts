@@ -1,9 +1,5 @@
 import nodemailer from "nodemailer";
 import crypto from "crypto";
-import dns from "dns";
-
-// Force IPv4 DNS resolution — Railway containers can't reach Gmail over IPv6
-dns.setDefaultResultOrder("ipv4first");
 
 // Generate a 6-digit OTP
 export function generateOTP(): string {

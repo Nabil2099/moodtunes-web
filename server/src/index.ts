@@ -1,3 +1,7 @@
+import dns from "dns";
+// Force IPv4 DNS — Railway containers can't reach Gmail SMTP over IPv6
+dns.setDefaultResultOrder("ipv4first");
+
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
