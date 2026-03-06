@@ -1,8 +1,14 @@
 import axios from "axios";
 import { MoodResult, Track, Artist, ArtistDetail, User, ForYouResponse, DJJourney, MoodInsights, TasteProfile, Mood } from "@/types";
 
+// In Capacitor (mobile), use the full production URL since files are served locally
+const isCapacitor = !!(window as any).Capacitor;
+const baseURL = isCapacitor
+  ? "https://moodtunes-web-production.up.railway.app/api"
+  : "/api";
+
 const api = axios.create({
-  baseURL: "/api",
+  baseURL,
   headers: { "Content-Type": "application/json" },
 });
 

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">MoodTunes</string>
+    <string name="title_activity_main">MoodTunes</string>
+    <string name="package_name">com.moodtunes.app</string>
+    <string name="custom_url_scheme">com.moodtunes.app</string>
+</resources>
