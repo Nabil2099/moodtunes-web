@@ -8,7 +8,7 @@ interface UserMenuProps {
 }
 
 export default function UserMenu({ onInsightsClick }: UserMenuProps) {
-  const { user, logout, setShowAuthModal } = useAuthStore();
+  const { user, logout, setShowAuthPage } = useAuthStore();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -27,7 +27,7 @@ export default function UserMenu({ onInsightsClick }: UserMenuProps) {
       <motion.button
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        onClick={() => setShowAuthModal(true)}
+        onClick={() => setShowAuthPage(true)}
         className="flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-mono bg-primary/10 text-primary hover:bg-primary/20 transition-all cursor-pointer"
       >
         <User size={14} />

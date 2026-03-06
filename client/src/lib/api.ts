@@ -82,13 +82,13 @@ export async function getLyrics(
 }
 
 // ─── Auth ───
-export async function sendOTP(email: string): Promise<{ message: string; isNewUser: boolean }> {
-  const { data } = await api.post("/auth/send-otp", { email });
+export async function sendOTP(email: string, signal?: AbortSignal): Promise<{ message: string; isNewUser: boolean }> {
+  const { data } = await api.post("/auth/send-otp", { email }, { signal });
   return data;
 }
 
-export async function verifyOTP(email: string, code: string, name?: string): Promise<{ token: string; user: User }> {
-  const { data } = await api.post("/auth/verify-otp", { email, code, name });
+export async function verifyOTP(email: string, code: string, name?: string, signal?: AbortSignal): Promise<{ token: string; user: User }> {
+  const { data } = await api.post("/auth/verify-otp", { email, code, name }, { signal });
   return data;
 }
 

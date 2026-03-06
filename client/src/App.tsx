@@ -10,7 +10,7 @@ import RecommendationsGrid from "@/components/RecommendationsGrid";
 import MiniPlayer from "@/components/MiniPlayer";
 import MoodHistory from "@/components/MoodHistory";
 import ArtistModal from "@/components/ArtistModal";
-import AuthModal from "@/components/AuthModal";
+import AuthPage from "@/components/AuthPage";
 import AIDashboard from "@/components/AIDashboard";
 import type { MoodEntry } from "@/components/MoodHistory";
 import { useMoodStore, useTracksStore, usePlayerStore } from "@/store";
@@ -27,7 +27,7 @@ export default function App() {
   const { setMoodResult, setAnalyzing, moodResult, method, currentMood } = useMoodStore();
   const { setTracks, setLoading } = useTracksStore();
   const { currentTrack } = usePlayerStore();
-  const { initialize, user } = useAuthStore();
+  const { initialize, user, showAuthPage } = useAuthStore();
 
   useKeyboardShortcuts();
 
@@ -99,77 +99,96 @@ export default function App() {
 
   return (
     <div className="relative min-h-screen">
-      {/* Ambient mood background glow */}
-      {moodColor && (
-        <div
-          className="fixed inset-0 pointer-events-none z-0 transition-opacity duration-1000"
-          style={{
-            background: `radial-gradient(ellipse at 50% 0%, ${moodColor}12 0%, transparent 60%), radial-gradient(ellipse at 80% 100%, ${moodColor}08 0%, transparent 50%)`,
-          }}
-        />
+      {showAuthPage ? (
+        <>
+          <AuthPage />
+          <Toaster
+            position="top-center"
+            toastOptions={{
+              style: {
+                background: "rgba(20, 20, 30, 0.95)",
+                color: "#f0f0f5",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+                backdropFilter: "blur(20px)",
+                fontFamily: "JetBrains Mono, monospace",
+                fontSize: "13px",
+              },
+            }}
+          />
+        </>
+      ) : (
+        <>
+          {/* Ambient mood background glow */}
+          {moodColor && (
+            <div
+              className="fixed inset-0 pointer-events-none z-0 transition-opacity duration-1000"
+              style={{
+                background: `radial-gradient(ellipse at 50% 0%, ${moodColor}12 0%, transparent 60%), radial-gradient(ellipse at 80% 100%, ${moodColor}08 0%, transparent 50%)`,
+              }}
+            />
+          )}
+
+          <FloatingNotes />
+
+          <Header
+            onTextEntry={handleTextEntry}
+            onQuestionnaire={handleQuestionnaire}
+            onTimeDetect={handleTimeDetect}
+            onArtistSelect={setSelectedArtistId}
+            onInsightsClick={() => setShowAIDashboard(true)}
+          />
+
+          <HeroSection
+            onTextEntry={handleTextEntry}
+            onQuestionnaire={handleQuestionnaire}
+            onTimeDetect={handleTimeDetect}
+          />
+
+          {/* Always visible — user can type anytime */}
+          <MoodInput />
+
+          <QuestionnaireModal
+            isOpen={showQuestionnaire}
+            onClose={() => setShowQuestionnaire(false)}
+          />
+
+          <RecommendationsGrid />
+
+          <MoodHistory
+            entries={moodHistory}
+            onClear={() => setMoodHistory([])}
+          />
+
+          <MiniPlayer />
+
+          <ArtistModal
+            artistId={selectedArtistId}
+            onClose={() => setSelectedArtistId(null)}
+          />
+
+          <AIDashboard
+            isOpen={showAIDashboard}
+            onClose={() => setShowAIDashboard(false)}
+          />
+
+          {/* Spacer for mini player */}
+          <div className="h-20" />
+
+          <Toaster
+            position="top-center"
+            toastOptions={{
+              style: {
+                background: "rgba(20, 20, 30, 0.95)",
+                color: "#f0f0f5",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+                backdropFilter: "blur(20px)",
+                fontFamily: "JetBrains Mono, monospace",
+                fontSize: "13px",
+              },
+            }}
+          />
+        </>
       )}
-
-      <FloatingNotes />
-
-      <Header
-        onTextEntry={handleTextEntry}
-        onQuestionnaire={handleQuestionnaire}
-        onTimeDetect={handleTimeDetect}
-        onArtistSelect={setSelectedArtistId}
-        onInsightsClick={() => setShowAIDashboard(true)}
-      />
-
-      <HeroSection
-        onTextEntry={handleTextEntry}
-        onQuestionnaire={handleQuestionnaire}
-        onTimeDetect={handleTimeDetect}
-      />
-
-      {/* Always visible — user can type anytime */}
-      <MoodInput />
-
-      <QuestionnaireModal
-        isOpen={showQuestionnaire}
-        onClose={() => setShowQuestionnaire(false)}
-      />
-
-      <RecommendationsGrid />
-
-      <MoodHistory
-        entries={moodHistory}
-        onClear={() => setMoodHistory([])}
-      />
-
-      <MiniPlayer />
-
-      <ArtistModal
-        artistId={selectedArtistId}
-        onClose={() => setSelectedArtistId(null)}
-      />
-
-      <AuthModal />
-
-      <AIDashboard
-        isOpen={showAIDashboard}
-        onClose={() => setShowAIDashboard(false)}
-      />
-
-      {/* Spacer for mini player */}
-      <div className="h-20" />
-
-      <Toaster
-        position="top-center"
-        toastOptions={{
-          style: {
-            background: "rgba(20, 20, 30, 0.95)",
-            color: "#f0f0f5",
-            border: "1px solid rgba(255, 255, 255, 0.1)",
-            backdropFilter: "blur(20px)",
-            fontFamily: "JetBrains Mono, monospace",
-            fontSize: "13px",
-          },
-        }}
-      />
     </div>
   );
 }

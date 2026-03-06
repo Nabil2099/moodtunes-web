@@ -6,12 +6,12 @@ interface AuthState {
   user: User | null;
   token: string | null;
   isLoading: boolean;
-  showAuthModal: boolean;
+  showAuthPage: boolean;
 
   setUser: (user: User | null) => void;
   login: (token: string, user: User) => void;
   logout: () => void;
-  setShowAuthModal: (show: boolean) => void;
+  setShowAuthPage: (show: boolean) => void;
   initialize: () => Promise<void>;
 }
 
@@ -19,13 +19,13 @@ export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   token: localStorage.getItem("moodtunes_token"),
   isLoading: true,
-  showAuthModal: false,
+  showAuthPage: false,
 
   setUser: (user) => set({ user }),
 
   login: (token, user) => {
     localStorage.setItem("moodtunes_token", token);
-    set({ token, user, showAuthModal: false });
+    set({ token, user, showAuthPage: false });
   },
 
   logout: () => {
@@ -33,7 +33,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ token: null, user: null });
   },
 
-  setShowAuthModal: (showAuthModal) => set({ showAuthModal }),
+  setShowAuthPage: (showAuthPage) => set({ showAuthPage }),
 
   initialize: async () => {
     const token = localStorage.getItem("moodtunes_token");
