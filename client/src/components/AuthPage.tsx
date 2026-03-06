@@ -1,138 +1,84 @@
-import { useState, useRef, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Mail, ArrowRight, Loader2, CheckCircle, Music, ArrowLeft } from "lucide-react";
+import { useEffect, useRef, useCallback, useState } from "react";
+import { motion } from "framer-motion";
+import { Music, ArrowLeft, Loader2 } from "lucide-react";
 import { useAuthStore } from "@/store/auth";
-import { sendOTP, verifyOTP } from "@/lib/api";
+import { googleAuth } from "@/lib/api";
 import toast from "react-hot-toast";
 
-type Step = "email" | "otp" | "name";
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        id: {
+          initialize: (config: {
+            client_id: string;
+            callback: (response: { credential: string }) => void;
+            auto_select?: boolean;
+          }) => void;
+          renderButton: (
+            element: HTMLElement,
+            config: { theme?: string; size?: string; width?: number; shape?: string; text?: string }
+          ) => void;
+        };
+      };
+    };
+  }
+}
+
+const GOOGLE_CLIENT_ID = "261079379032-41jbu406n87qo2rminl4ik6h917ee591.apps.googleusercontent.com";
 
 export default function AuthPage() {
   const { login, setShowAuthPage } = useAuthStore();
-  const [step, setStep] = useState<Step>("email");
-  const [email, setEmail] = useState("");
-  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
-  const [name, setName] = useState("");
-  const [isNewUser, setIsNewUser] = useState(false);
+  const googleBtnRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(false);
-  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
-  const emailRef = useRef<HTMLInputElement>(null);
-  const abortRef = useRef<AbortController | null>(null);
+
+  const handleGoogleResponse = useCallback(
+    async (response: { credential: string }) => {
+      setLoading(true);
+      try {
+        const { token, user } = await googleAuth(response.credential);
+        login(token, user);
+        toast.success(`Welcome, ${user.name || "friend"}! 🎵`);
+      } catch {
+        toast.error("Sign in failed. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [login]
+  );
 
   useEffect(() => {
-    setTimeout(() => emailRef.current?.focus(), 100);
-    // Cancel any pending request on unmount
-    return () => abortRef.current?.abort();
-  }, []);
+    const initGoogle = () => {
+      if (!window.google || !googleBtnRef.current) return;
 
-  const handleBack = () => {
-    abortRef.current?.abort();
-    setShowAuthPage(false);
-  };
+      window.google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: handleGoogleResponse,
+      });
 
-  const handleSendOTP = async () => {
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      toast.error("Please enter a valid email");
-      return;
+      window.google.accounts.id.renderButton(googleBtnRef.current, {
+        theme: "filled_black",
+        size: "large",
+        width: 360,
+        shape: "pill",
+        text: "continue_with",
+      });
+    };
+
+    // GSI script might already be loaded or still loading
+    if (window.google) {
+      initGoogle();
+    } else {
+      const check = setInterval(() => {
+        if (window.google) {
+          clearInterval(check);
+          initGoogle();
+        }
+      }, 100);
+      return () => clearInterval(check);
     }
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
-    setLoading(true);
-    try {
-      const result = await sendOTP(email, controller.signal);
-      if (controller.signal.aborted) return;
-      setIsNewUser(result.isNewUser);
-      setStep("otp");
-      toast.success("Verification code sent!");
-      setTimeout(() => otpRefs.current[0]?.focus(), 100);
-    } catch (err: unknown) {
-      if (err instanceof Error && err.name === "CanceledError") return;
-      toast.error("Failed to send code. Try again.");
-    } finally {
-      if (!controller.signal.aborted) setLoading(false);
-    }
-  };
-
-  const handleOTPChange = (index: number, value: string) => {
-    if (!/^\d*$/.test(value)) return;
-    const newOtp = [...otp];
-    newOtp[index] = value.slice(-1);
-    setOtp(newOtp);
-
-    if (value && index < 5) {
-      otpRefs.current[index + 1]?.focus();
-    }
-
-    if (newOtp.every((d) => d !== "") && value) {
-      handleVerifyOTP(newOtp.join(""));
-    }
-  };
-
-  const handleOTPKeyDown = (index: number, e: React.KeyboardEvent) => {
-    if (e.key === "Backspace" && !otp[index] && index > 0) {
-      otpRefs.current[index - 1]?.focus();
-    }
-  };
-
-  const handleOTPPaste = (e: React.ClipboardEvent) => {
-    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
-    if (pasted.length === 6) {
-      const newOtp = pasted.split("");
-      setOtp(newOtp);
-      otpRefs.current[5]?.focus();
-      handleVerifyOTP(pasted);
-    }
-  };
-
-  const handleVerifyOTP = async (code?: string) => {
-    const otpCode = code || otp.join("");
-    if (otpCode.length !== 6) {
-      toast.error("Please enter the 6-digit code");
-      return;
-    }
-
-    if (isNewUser) {
-      setStep("name");
-      return;
-    }
-
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
-    setLoading(true);
-    try {
-      const { token, user } = await verifyOTP(email, otpCode, undefined, controller.signal);
-      if (controller.signal.aborted) return;
-      login(token, user);
-      toast.success(`Welcome back, ${user.name || "friend"}!`);
-    } catch (err: unknown) {
-      if (err instanceof Error && err.name === "CanceledError") return;
-      toast.error("Invalid or expired code");
-      setOtp(["", "", "", "", "", ""]);
-      otpRefs.current[0]?.focus();
-    } finally {
-      if (!controller.signal.aborted) setLoading(false);
-    }
-  };
-
-  const handleSignup = async () => {
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
-    setLoading(true);
-    try {
-      const { token, user } = await verifyOTP(email, otp.join(""), name || undefined, controller.signal);
-      if (controller.signal.aborted) return;
-      login(token, user);
-      toast.success(`Welcome to MoodTunes, ${user.name}! 🎵`);
-    } catch (err: unknown) {
-      if (err instanceof Error && err.name === "CanceledError") return;
-      toast.error("Verification failed. Try again.");
-    } finally {
-      if (!controller.signal.aborted) setLoading(false);
-    }
-  };
+  }, [handleGoogleResponse]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "#0a0a14" }}>
@@ -148,7 +94,7 @@ export default function AuthPage() {
         animate={{ opacity: 1, x: 0 }}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        onClick={handleBack}
+        onClick={() => setShowAuthPage(false)}
         className="absolute top-6 left-6 flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer z-10"
       >
         <ArrowLeft size={18} />
@@ -175,168 +121,30 @@ export default function AuthPage() {
             </span>
           </div>
 
-          <AnimatePresence mode="wait">
-            {step === "email" && (
-              <motion.div
-                key="email"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                className="space-y-6"
-              >
-                <div className="text-center">
-                  <h2 className="text-xl font-heading font-bold text-foreground mb-2">
-                    Sign in to MoodTunes
-                  </h2>
-                  <p className="text-sm text-muted-foreground">
-                    We'll send a verification code to your email
-                  </p>
-                </div>
+          <div className="space-y-6">
+            <div className="text-center">
+              <h2 className="text-xl font-heading font-bold text-foreground mb-2">
+                Sign in to MoodTunes
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Continue with your Google account
+              </p>
+            </div>
 
-                <div className="space-y-4">
-                  <div className="relative">
-                    <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                    <input
-                      ref={emailRef}
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleSendOTP()}
-                      placeholder="your@email.com"
-                      className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-white/5 border border-white/10 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/25 font-mono text-sm transition-all"
-                    />
-                  </div>
-
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={handleSendOTP}
-                    disabled={loading}
-                    className="w-full py-3.5 rounded-xl bg-primary text-primary-foreground font-medium flex items-center justify-center gap-2 hover:brightness-110 transition-all disabled:opacity-50 cursor-pointer"
-                  >
-                    {loading ? (
-                      <Loader2 size={18} className="animate-spin" />
-                    ) : (
-                      <>
-                        Continue
-                        <ArrowRight size={18} />
-                      </>
-                    )}
-                  </motion.button>
-                </div>
-
-                <p className="text-xs text-muted-foreground/50 text-center">
-                  No password needed — we use secure email verification
-                </p>
-              </motion.div>
+            {loading ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 size={24} className="animate-spin text-primary" />
+              </div>
+            ) : (
+              <div className="flex justify-center">
+                <div ref={googleBtnRef} />
+              </div>
             )}
 
-            {step === "otp" && (
-              <motion.div
-                key="otp"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                className="space-y-6"
-              >
-                <div className="text-center">
-                  <h2 className="text-xl font-heading font-bold text-foreground mb-2">
-                    Check your email
-                  </h2>
-                  <p className="text-sm text-muted-foreground">
-                    Enter the 6-digit code sent to{" "}
-                    <span className="text-primary font-mono">{email}</span>
-                  </p>
-                </div>
-
-                <div className="flex justify-center gap-2" onPaste={handleOTPPaste}>
-                  {otp.map((digit, i) => (
-                    <input
-                      key={i}
-                      ref={(el) => { otpRefs.current[i] = el; }}
-                      type="text"
-                      inputMode="numeric"
-                      maxLength={1}
-                      value={digit}
-                      onChange={(e) => handleOTPChange(i, e.target.value)}
-                      onKeyDown={(e) => handleOTPKeyDown(i, e)}
-                      className="w-12 h-14 text-center text-xl font-mono rounded-xl bg-white/5 border border-white/10 text-foreground focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/25 transition-all"
-                    />
-                  ))}
-                </div>
-
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => handleVerifyOTP()}
-                  disabled={loading || otp.some((d) => !d)}
-                  className="w-full py-3.5 rounded-xl bg-primary text-primary-foreground font-medium flex items-center justify-center gap-2 hover:brightness-110 transition-all disabled:opacity-50 cursor-pointer"
-                >
-                  {loading ? (
-                    <Loader2 size={18} className="animate-spin" />
-                  ) : (
-                    <>
-                      <CheckCircle size={18} />
-                      Verify
-                    </>
-                  )}
-                </motion.button>
-
-                <button
-                  onClick={() => { setStep("email"); setOtp(["", "", "", "", "", ""]); }}
-                  className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                >
-                  ← Use a different email
-                </button>
-              </motion.div>
-            )}
-
-            {step === "name" && (
-              <motion.div
-                key="name"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                className="space-y-6"
-              >
-                <div className="text-center">
-                  <h2 className="text-xl font-heading font-bold text-foreground mb-2">
-                    Welcome! What's your name?
-                  </h2>
-                  <p className="text-sm text-muted-foreground">
-                    This is how you'll appear in MoodTunes
-                  </p>
-                </div>
-
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSignup()}
-                  placeholder="Your name"
-                  autoFocus
-                  className="w-full px-4 py-3.5 rounded-xl bg-white/5 border border-white/10 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/25 font-mono text-sm transition-all"
-                />
-
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={handleSignup}
-                  disabled={loading}
-                  className="w-full py-3.5 rounded-xl bg-primary text-primary-foreground font-medium flex items-center justify-center gap-2 hover:brightness-110 transition-all disabled:opacity-50 cursor-pointer"
-                >
-                  {loading ? (
-                    <Loader2 size={18} className="animate-spin" />
-                  ) : (
-                    <>
-                      Get Started
-                      <ArrowRight size={18} />
-                    </>
-                  )}
-                </motion.button>
-              </motion.div>
-            )}
-          </AnimatePresence>
+            <p className="text-xs text-muted-foreground/50 text-center">
+              We only access your name, email &amp; profile picture
+            </p>
+          </div>
         </div>
       </motion.div>
     </div>

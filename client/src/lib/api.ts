@@ -92,6 +92,11 @@ export async function verifyOTP(email: string, code: string, name?: string, sign
   return data;
 }
 
+export async function googleAuth(credential: string): Promise<{ token: string; user: User }> {
+  const { data } = await api.post("/auth/google", { credential });
+  return data;
+}
+
 export async function getMe(): Promise<User> {
   const { data } = await api.get<User>("/auth/me");
   return data;

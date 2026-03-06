@@ -1,8 +1,11 @@
 import { Router, Request, Response } from "express";
 import { body, validationResult } from "express-validator";
+import { OAuth2Client } from "google-auth-library";
 import prisma from "../lib/prisma";
 import { generateOTP, sendOTPEmail } from "../services/email";
 import { signToken, requireAuth, AuthPayload } from "../middleware/auth";
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const router = Router();
 
@@ -122,6 +125,70 @@ router.post(
     } catch (error) {
       console.error("Verify OTP error:", error);
       res.status(500).json({ error: "Verification failed" });
+    }
+  }
+);
+
+// POST /api/auth/google — sign in with Google
+router.post(
+  "/google",
+  [body("credential").isString()],
+  async (req: Request, res: Response): Promise<void> => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      res.status(400).json({ errors: errors.array() });
+      return;
+    }
+
+    try {
+      const { credential } = req.body;
+
+      const ticket = await googleClient.verifyIdToken({
+        idToken: credential,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      });
+
+      const payload = ticket.getPayload();
+      if (!payload || !payload.email) {
+        res.status(400).json({ error: "Invalid Google token" });
+        return;
+      }
+
+      const { email, name, picture } = payload;
+
+      // Find or create user
+      let user = await prisma.user.findUnique({ where: { email } });
+
+      if (!user) {
+        user = await prisma.user.create({
+          data: {
+            email,
+            name: name || email.split("@")[0],
+            avatar: picture || null,
+          },
+        });
+      } else if (picture && !user.avatar) {
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: { avatar: picture },
+        });
+      }
+
+      const token = signToken({ userId: user.id, email: user.email });
+
+      res.json({
+        token,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          avatar: user.avatar,
+          createdAt: user.createdAt,
+        },
+      });
+    } catch (error) {
+      console.error("Google auth error:", error);
+      res.status(401).json({ error: "Google authentication failed" });
     }
   }
 );
