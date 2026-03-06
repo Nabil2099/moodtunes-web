@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { MessageSquare, ClipboardList, Clock } from "lucide-react";
+import SearchBar from "@/components/SearchBar";
 
 interface HeaderProps {
   onTextEntry: () => void;
@@ -28,8 +29,9 @@ export default function Header({
           </span>
         </a>
 
-        {/* Quick access buttons */}
+        {/* Search + Quick access buttons */}
         <nav className="flex items-center gap-1 sm:gap-2">
+          <SearchBar />
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}

@@ -1,5 +1,15 @@
 import { create } from "zustand";
 import { Mood, MoodResult, Track, MOOD_COLORS } from "@/types";
+import {
+  loadTrack,
+  playAudio,
+  pauseAudio,
+  seekTo,
+  setVolume as setAudioVolume,
+  getVolume,
+  onTimeUpdate,
+  onEnded,
+} from "@/lib/audio";
 
 // ─── Mood Slice ───
 interface MoodState {
@@ -50,6 +60,8 @@ interface PlayerState {
   currentTrack: Track | null;
   isPlaying: boolean;
   progress: number;
+  duration: number;
+  volume: number;
   isExpanded: boolean;
   queue: Track[];
   play: (track: Track, queue?: Track[]) => void;
@@ -57,44 +69,83 @@ interface PlayerState {
   next: () => void;
   previous: () => void;
   setProgress: (p: number) => void;
+  setDuration: (d: number) => void;
+  setVolume: (v: number) => void;
+  seek: (time: number) => void;
   setExpanded: (v: boolean) => void;
   stop: () => void;
 }
 
-export const usePlayerStore = create<PlayerState>((set, get) => ({
-  currentTrack: null,
-  isPlaying: false,
-  progress: 0,
-  isExpanded: false,
-  queue: [],
-  play: (track, queue) =>
-    set({
-      currentTrack: track,
-      isPlaying: true,
-      progress: 0,
-      queue: queue || get().queue,
-    }),
-  togglePlay: () => set((s) => ({ isPlaying: !s.isPlaying })),
-  next: () => {
-    const { queue, currentTrack } = get();
-    if (!currentTrack || queue.length === 0) return;
-    const idx = queue.findIndex((t) => t.id === currentTrack.id);
-    const nextTrack = queue[(idx + 1) % queue.length];
-    set({ currentTrack: nextTrack, isPlaying: true, progress: 0 });
-  },
-  previous: () => {
-    const { queue, currentTrack, progress } = get();
-    if (!currentTrack || queue.length === 0) return;
-    // If more than 3 seconds in, restart current track
-    if (progress > 3) {
-      set({ progress: 0 });
-      return;
-    }
-    const idx = queue.findIndex((t) => t.id === currentTrack.id);
-    const prevTrack = queue[(idx - 1 + queue.length) % queue.length];
-    set({ currentTrack: prevTrack, isPlaying: true, progress: 0 });
-  },
-  setProgress: (progress) => set({ progress }),
-  setExpanded: (isExpanded) => set({ isExpanded }),
-  stop: () => set({ currentTrack: null, isPlaying: false, progress: 0 }),
-}));
+export const usePlayerStore = create<PlayerState>((set, get) => {
+  // Wire up audio engine callbacks
+  onTimeUpdate((time) => set({ progress: time }));
+  onEnded(() => get().next());
+
+  return {
+    currentTrack: null,
+    isPlaying: false,
+    progress: 0,
+    duration: 0,
+    volume: getVolume(),
+    isExpanded: false,
+    queue: [],
+    play: (track, queue) => {
+      loadTrack(track.previewUrl);
+      playAudio();
+      set({
+        currentTrack: track,
+        isPlaying: true,
+        progress: 0,
+        duration: track.duration,
+        queue: queue || get().queue,
+      });
+    },
+    togglePlay: () => {
+      const { isPlaying } = get();
+      if (isPlaying) {
+        pauseAudio();
+      } else {
+        playAudio();
+      }
+      set({ isPlaying: !isPlaying });
+    },
+    next: () => {
+      const { queue, currentTrack } = get();
+      if (!currentTrack || queue.length === 0) return;
+      const idx = queue.findIndex((t) => t.id === currentTrack.id);
+      const nextTrack = queue[(idx + 1) % queue.length];
+      loadTrack(nextTrack.previewUrl);
+      playAudio();
+      set({ currentTrack: nextTrack, isPlaying: true, progress: 0, duration: nextTrack.duration });
+    },
+    previous: () => {
+      const { queue, currentTrack, progress } = get();
+      if (!currentTrack || queue.length === 0) return;
+      if (progress > 3) {
+        seekTo(0);
+        set({ progress: 0 });
+        return;
+      }
+      const idx = queue.findIndex((t) => t.id === currentTrack.id);
+      const prevTrack = queue[(idx - 1 + queue.length) % queue.length];
+      loadTrack(prevTrack.previewUrl);
+      playAudio();
+      set({ currentTrack: prevTrack, isPlaying: true, progress: 0, duration: prevTrack.duration });
+    },
+    setProgress: (progress) => set({ progress }),
+    setDuration: (duration) => set({ duration }),
+    setVolume: (vol) => {
+      setAudioVolume(vol);
+      set({ volume: vol });
+    },
+    seek: (time) => {
+      seekTo(time);
+      set({ progress: time });
+    },
+    setExpanded: (isExpanded) => set({ isExpanded }),
+    stop: () => {
+      pauseAudio();
+      set({ currentTrack: null, isPlaying: false, progress: 0, duration: 0 });
+    },
+  };
+});

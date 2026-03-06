@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Play,
@@ -9,6 +9,8 @@ import {
   ChevronDown,
   Music,
   ListMusic,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import { usePlayerStore, useMoodStore } from "@/store";
 import { MOOD_COLORS } from "@/types";
@@ -51,42 +53,41 @@ export default function MiniPlayer() {
     currentTrack,
     isPlaying,
     progress,
+    duration,
+    volume,
     isExpanded,
     queue,
     togglePlay,
     next,
     previous,
-    setProgress,
+    seek,
+    setVolume,
     setExpanded,
   } = usePlayerStore();
   const { currentMood } = useMoodStore();
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [prevVolume, setPrevVolume] = useState(0.8);
 
   const color = currentMood ? MOOD_COLORS[currentMood] : "#7c6af7";
 
-  // Simulate playback progress
-  useEffect(() => {
-    if (isPlaying && currentTrack) {
-      intervalRef.current = setInterval(() => {
-        setProgress(
-          usePlayerStore.getState().progress + 1
-        );
-        if (usePlayerStore.getState().progress >= currentTrack.duration) {
-          next();
-        }
-      }, 1000);
-    }
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [isPlaying, currentTrack, next, setProgress]);
-
   if (!currentTrack) return null;
 
-  const progressPercent = Math.min(
-    (progress / currentTrack.duration) * 100,
-    100
-  );
+  const trackDuration = duration || currentTrack.duration || 30;
+  const progressPercent = Math.min((progress / trackDuration) * 100, 100);
+
+  const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    seek(pct * trackDuration);
+  };
+
+  const toggleMute = () => {
+    if (volume > 0) {
+      setPrevVolume(volume);
+      setVolume(0);
+    } else {
+      setVolume(prevVolume || 0.8);
+    }
+  };
 
   return (
     <>
@@ -100,12 +101,14 @@ export default function MiniPlayer() {
             exit={{ y: 100 }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
           >
-            {/* Progress bar */}
-            <div className="h-0.5 bg-white/10 w-full">
+            {/* Progress bar — clickable to seek */}
+            <div
+              className="h-1 bg-white/10 w-full cursor-pointer group/bar"
+              onClick={handleSeek}
+            >
               <motion.div
                 className="h-full"
                 style={{ backgroundColor: color, width: `${progressPercent}%` }}
-                transition={{ duration: 0.3 }}
               />
             </div>
 
@@ -266,9 +269,12 @@ export default function MiniPlayer() {
                 )}
               </motion.div>
 
-              {/* Progress bar */}
+              {/* Progress bar — clickable to seek */}
               <div className="w-full max-w-sm mb-6">
-                <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                <div
+                  className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden cursor-pointer"
+                  onClick={handleSeek}
+                >
                   <motion.div
                     className="h-full rounded-full"
                     style={{
@@ -279,7 +285,7 @@ export default function MiniPlayer() {
                 </div>
                 <div className="flex justify-between mt-2 text-xs text-muted-foreground font-mono">
                   <span>{formatDuration(progress)}</span>
-                  <span>{formatDuration(currentTrack.duration)}</span>
+                  <span>{formatDuration(trackDuration)}</span>
                 </div>
               </div>
 
@@ -316,6 +322,27 @@ export default function MiniPlayer() {
                 >
                   <SkipForward size={22} />
                 </motion.button>
+              </div>
+
+              {/* Volume control */}
+              <div className="flex items-center gap-3 mt-6 w-full max-w-[200px]">
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  onClick={toggleMute}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  {volume === 0 ? <VolumeX size={18} /> : <Volume2 size={18} />}
+                </motion.button>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  value={volume}
+                  onChange={(e) => setVolume(parseFloat(e.target.value))}
+                  className="flex-1 h-1 appearance-none bg-white/10 rounded-full cursor-pointer accent-current"
+                  style={{ accentColor: color }}
+                />
               </div>
 
               {/* Equalizer visualization when playing */}

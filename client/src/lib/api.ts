@@ -34,3 +34,16 @@ export async function getTracks(mood?: string): Promise<Track[]> {
   });
   return data;
 }
+
+export async function searchTracks(
+  query: string,
+  mood?: string
+): Promise<Track[]> {
+  const { data } = await api.get<Track[]>("/tracks/search", {
+    params: {
+      q: query,
+      ...(mood ? { mood } : {}),
+    },
+  });
+  return data;
+}
