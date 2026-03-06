@@ -1,9 +1,50 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Pause, SkipForward, ChevronUp, X } from "lucide-react";
+import {
+  Play,
+  Pause,
+  SkipForward,
+  SkipBack,
+  ChevronUp,
+  ChevronDown,
+  Music,
+  ListMusic,
+} from "lucide-react";
 import { usePlayerStore, useMoodStore } from "@/store";
 import { MOOD_COLORS } from "@/types";
 import { formatDuration } from "@/lib/utils";
+
+function PlayerAlbumArt({
+  src,
+  alt,
+  color,
+  className,
+}: {
+  src: string;
+  alt: string;
+  color: string;
+  className?: string;
+}) {
+  const [error, setError] = useState(false);
+  if (error) {
+    return (
+      <div
+        className={`flex items-center justify-center ${className}`}
+        style={{ background: `linear-gradient(135deg, ${color}40, ${color}15)` }}
+      >
+        <Music size={48} className="text-white/25" />
+      </div>
+    );
+  }
+  return (
+    <img
+      src={src}
+      alt={alt}
+      className={`object-cover ${className}`}
+      onError={() => setError(true)}
+    />
+  );
+}
 
 export default function MiniPlayer() {
   const {
@@ -11,8 +52,10 @@ export default function MiniPlayer() {
     isPlaying,
     progress,
     isExpanded,
+    queue,
     togglePlay,
     next,
+    previous,
     setProgress,
     setExpanded,
   } = usePlayerStore();
@@ -68,17 +111,22 @@ export default function MiniPlayer() {
 
             <div className="flex items-center gap-3 px-4 py-3 max-w-6xl mx-auto">
               {/* Album art */}
-              <motion.img
-                src={currentTrack.albumArt}
-                alt={currentTrack.title}
-                className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
+              <motion.div
+                className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0"
                 animate={isPlaying ? { rotate: 360 } : { rotate: 0 }}
                 transition={
                   isPlaying
                     ? { duration: 8, repeat: Infinity, ease: "linear" }
                     : { duration: 0.3 }
                 }
-              />
+              >
+                <PlayerAlbumArt
+                  src={currentTrack.albumArt}
+                  alt={currentTrack.title}
+                  color={color}
+                  className="w-full h-full"
+                />
+              </motion.div>
 
               {/* Track info */}
               <div className="flex-1 min-w-0">
@@ -92,6 +140,14 @@ export default function MiniPlayer() {
 
               {/* Controls */}
               <div className="flex items-center gap-2">
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  onClick={previous}
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground"
+                >
+                  <SkipBack size={16} />
+                </motion.button>
+
                 <motion.button
                   whileTap={{ scale: 0.9 }}
                   onClick={togglePlay}
@@ -130,55 +186,89 @@ export default function MiniPlayer() {
       <AnimatePresence>
         {isExpanded && (
           <motion.div
-            className="fixed inset-0 z-50 flex flex-col items-center justify-center p-6"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex flex-col"
+            initial={{ opacity: 0, y: "100%" }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: "100%" }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
           >
+            {/* Background */}
             <div
               className="absolute inset-0"
               style={{
-                background: `linear-gradient(180deg, ${color}30 0%, #080810 60%)`,
+                background: `linear-gradient(180deg, ${color}25 0%, #080810 50%, #080810 100%)`,
               }}
             />
 
-            <div className="relative z-10 w-full max-w-md flex flex-col items-center">
-              <button
+            {/* Header */}
+            <div className="relative z-10 flex items-center justify-between px-6 pt-6 pb-2">
+              <motion.button
+                whileTap={{ scale: 0.9 }}
                 onClick={() => setExpanded(false)}
-                className="absolute -top-2 right-0 text-muted-foreground hover:text-foreground"
+                className="w-10 h-10 rounded-full glass flex items-center justify-center text-muted-foreground hover:text-foreground"
               >
-                <X size={24} />
-              </button>
+                <ChevronDown size={20} />
+              </motion.button>
+              <div className="flex items-center gap-1 text-xs text-muted-foreground font-mono">
+                <ListMusic size={14} />
+                <span>
+                  {queue.length > 0
+                    ? `${queue.findIndex((t) => t.id === currentTrack.id) + 1} / ${queue.length}`
+                    : "1 / 1"}
+                </span>
+              </div>
+              <div className="w-10" />
+            </div>
 
+            {/* Main content */}
+            <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 overflow-hidden">
               {/* Album art */}
               <motion.div
                 className="w-64 h-64 sm:w-72 sm:h-72 rounded-3xl overflow-hidden shadow-2xl mb-8"
                 style={{ boxShadow: `0 20px 60px ${color}30` }}
-                animate={isPlaying ? { rotate: 360 } : {}}
+                animate={
+                  isPlaying
+                    ? { scale: [1, 1.02, 1], rotate: [0, 1, -1, 0] }
+                    : { scale: 0.95 }
+                }
                 transition={
                   isPlaying
-                    ? { duration: 20, repeat: Infinity, ease: "linear" }
-                    : { duration: 0 }
+                    ? { duration: 4, repeat: Infinity, ease: "easeInOut" }
+                    : { duration: 0.3 }
                 }
               >
-                <img
+                <PlayerAlbumArt
                   src={currentTrack.albumArt}
                   alt={currentTrack.title}
-                  className="w-full h-full object-cover"
+                  color={color}
+                  className="w-full h-full"
                 />
               </motion.div>
 
               {/* Track info */}
-              <h3 className="font-heading text-2xl font-bold text-center mb-1">
-                {currentTrack.title}
-              </h3>
-              <p className="text-muted-foreground font-mono text-sm mb-8">
-                {currentTrack.artist}
-              </p>
+              <motion.div
+                className="w-full max-w-sm text-center mb-6"
+                key={currentTrack.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <h3 className="font-heading text-2xl font-bold mb-1 truncate">
+                  {currentTrack.title}
+                </h3>
+                <p className="text-muted-foreground font-mono text-sm mb-2">
+                  {currentTrack.artist}
+                </p>
+                {currentTrack.description && (
+                  <p className="text-xs text-muted-foreground/60 line-clamp-2 leading-relaxed">
+                    {currentTrack.description}
+                  </p>
+                )}
+              </motion.div>
 
               {/* Progress bar */}
-              <div className="w-full mb-2">
-                <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden">
+              <div className="w-full max-w-sm mb-6">
+                <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
                   <motion.div
                     className="h-full rounded-full"
                     style={{
@@ -194,12 +284,23 @@ export default function MiniPlayer() {
               </div>
 
               {/* Controls */}
-              <div className="flex items-center gap-8 mt-6">
+              <div className="flex items-center gap-6">
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  onClick={previous}
+                  className="w-12 h-12 rounded-full glass flex items-center justify-center text-foreground"
+                >
+                  <SkipBack size={22} />
+                </motion.button>
+
                 <motion.button
                   whileTap={{ scale: 0.9 }}
                   onClick={togglePlay}
-                  className="w-16 h-16 rounded-full flex items-center justify-center"
-                  style={{ backgroundColor: color }}
+                  className="w-16 h-16 rounded-full flex items-center justify-center shadow-lg"
+                  style={{
+                    backgroundColor: color,
+                    boxShadow: `0 0 30px ${color}40`,
+                  }}
                 >
                   {isPlaying ? (
                     <Pause size={28} className="text-white" />
@@ -216,6 +317,36 @@ export default function MiniPlayer() {
                   <SkipForward size={22} />
                 </motion.button>
               </div>
+
+              {/* Equalizer visualization when playing */}
+              {isPlaying && (
+                <motion.div
+                  className="flex items-end gap-1 mt-6"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                >
+                  {[...Array(7)].map((_, i) => (
+                    <motion.div
+                      key={i}
+                      className="w-1 rounded-full"
+                      style={{ backgroundColor: `${color}80` }}
+                      animate={{
+                        height: [
+                          4 + Math.random() * 8,
+                          12 + Math.random() * 16,
+                          4 + Math.random() * 8,
+                        ],
+                      }}
+                      transition={{
+                        duration: 0.5 + Math.random() * 0.5,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                        delay: i * 0.08,
+                      }}
+                    />
+                  ))}
+                </motion.div>
+              )}
             </div>
           </motion.div>
         )}

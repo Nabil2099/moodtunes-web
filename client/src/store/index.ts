@@ -55,6 +55,7 @@ interface PlayerState {
   play: (track: Track, queue?: Track[]) => void;
   togglePlay: () => void;
   next: () => void;
+  previous: () => void;
   setProgress: (p: number) => void;
   setExpanded: (v: boolean) => void;
   stop: () => void;
@@ -80,6 +81,18 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     const idx = queue.findIndex((t) => t.id === currentTrack.id);
     const nextTrack = queue[(idx + 1) % queue.length];
     set({ currentTrack: nextTrack, isPlaying: true, progress: 0 });
+  },
+  previous: () => {
+    const { queue, currentTrack, progress } = get();
+    if (!currentTrack || queue.length === 0) return;
+    // If more than 3 seconds in, restart current track
+    if (progress > 3) {
+      set({ progress: 0 });
+      return;
+    }
+    const idx = queue.findIndex((t) => t.id === currentTrack.id);
+    const prevTrack = queue[(idx - 1 + queue.length) % queue.length];
+    set({ currentTrack: prevTrack, isPlaying: true, progress: 0 });
   },
   setProgress: (progress) => set({ progress }),
   setExpanded: (isExpanded) => set({ isExpanded }),

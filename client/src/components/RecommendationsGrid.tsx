@@ -1,7 +1,8 @@
-import { motion } from "framer-motion";
-import { Play, Pause } from "lucide-react";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Play, Pause, Shuffle, Heart, Music } from "lucide-react";
 import { useTracksStore, usePlayerStore, useMoodStore } from "@/store";
-import { Mood, MOOD_COLORS, MOOD_LABELS } from "@/types";
+import { Mood, Track, MOOD_COLORS, MOOD_LABELS } from "@/types";
 import { formatDuration } from "@/lib/utils";
 import { getTracks } from "@/lib/api";
 import toast from "react-hot-toast";
@@ -11,24 +12,82 @@ const allMoods: Mood[] = ["happy", "sad", "energetic", "calm", "focused"];
 const containerVariants = {
   hidden: {},
   visible: {
-    transition: { staggerChildren: 0.06 },
+    transition: { staggerChildren: 0.05 },
   },
 };
 
 const cardVariants = {
-  hidden: { opacity: 0, y: 30, scale: 0.95 },
+  hidden: { opacity: 0, y: 20, scale: 0.97 },
   visible: {
     opacity: 1,
     y: 0,
     scale: 1,
-    transition: { duration: 0.4, ease: "easeOut" },
+    transition: { duration: 0.35, ease: "easeOut" },
   },
 };
+
+function AlbumArt({ track, color, isCurrentTrack, isPlaying }: {
+  track: Track;
+  color: string;
+  isCurrentTrack: boolean;
+  isPlaying: boolean;
+}) {
+  const [imgError, setImgError] = useState(false);
+
+  return (
+    <div className="relative aspect-square overflow-hidden">
+      {imgError ? (
+        <div
+          className="w-full h-full flex items-center justify-center"
+          style={{ background: `linear-gradient(135deg, ${color}30, ${color}10)` }}
+        >
+          <Music size={40} className="text-white/20" />
+        </div>
+      ) : (
+        <img
+          src={track.albumArt}
+          alt={track.title}
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+          loading="lazy"
+          onError={() => setImgError(true)}
+        />
+      )}
+      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+        <motion.div
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          className="w-14 h-14 rounded-full flex items-center justify-center"
+          style={{ backgroundColor: color }}
+        >
+          {isCurrentTrack && isPlaying ? (
+            <Pause size={24} className="text-white" />
+          ) : (
+            <Play size={24} className="text-white ml-1" />
+          )}
+        </motion.div>
+      </div>
+      {isCurrentTrack && isPlaying && (
+        <div className="absolute bottom-2 left-2 flex items-center gap-0.5">
+          {[...Array(3)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="w-0.5 rounded-full"
+              style={{ backgroundColor: color }}
+              animate={{ height: [4, 12, 4] }}
+              transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.15 }}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function RecommendationsGrid() {
   const { tracks, setTracks, setLoading } = useTracksStore();
   const { currentMood, setMood } = useMoodStore();
   const { play, currentTrack, isPlaying, togglePlay } = usePlayerStore();
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
 
   if (!currentMood || tracks.length === 0) return null;
 
@@ -43,6 +102,7 @@ export default function RecommendationsGrid() {
       setTracks(newTracks);
     } catch {
       toast.error("Failed to load tracks");
+      setLoading(false);
     }
   };
 
@@ -54,6 +114,37 @@ export default function RecommendationsGrid() {
       togglePlay();
     } else {
       play(track, tracks);
+    }
+  };
+
+  const handleShuffle = () => {
+    const shuffled = [...tracks].sort(() => Math.random() - 0.5);
+    setTracks(shuffled);
+    if (shuffled.length > 0) {
+      play(shuffled[0], shuffled);
+    }
+    toast.success("Queue shuffled!");
+  };
+
+  const toggleFavorite = (e: React.MouseEvent, trackId: string) => {
+    e.stopPropagation();
+    setFavorites((prev) => {
+      const next = new Set(prev);
+      if (next.has(trackId)) {
+        next.delete(trackId);
+        toast("Removed from favorites", { icon: "💔" });
+      } else {
+        next.add(trackId);
+        toast("Added to favorites!", { icon: "❤️" });
+      }
+      return next;
+    });
+  };
+
+  const handlePlayAll = () => {
+    if (tracks.length > 0) {
+      play(tracks[0], tracks);
+      toast.success(`Playing ${tracks.length} tracks`);
     }
   };
 
@@ -71,8 +162,7 @@ export default function RecommendationsGrid() {
         <motion.h2
           className="font-heading text-2xl sm:text-3xl font-bold text-center mb-8"
           initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
+          animate={{ opacity: 1 }}
         >
           Your{" "}
           <span style={{ color }}>{MOOD_LABELS[currentMood]}</span>{" "}
@@ -81,10 +171,9 @@ export default function RecommendationsGrid() {
 
         {/* Mood filter chips */}
         <motion.div
-          className="flex flex-wrap justify-center gap-2 mb-10"
+          className="flex flex-wrap justify-center gap-2 mb-6"
           initial={{ opacity: 0, y: 10 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          animate={{ opacity: 1, y: 0 }}
         >
           {allMoods.map((mood) => (
             <motion.button
@@ -111,73 +200,107 @@ export default function RecommendationsGrid() {
           ))}
         </motion.div>
 
+        {/* Actions bar */}
+        <motion.div
+          className="flex items-center justify-between mb-8 px-1"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.1 }}
+        >
+          <p className="text-xs text-muted-foreground font-mono">
+            {tracks.length} tracks
+          </p>
+          <div className="flex items-center gap-2">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleShuffle}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono glass text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            >
+              <Shuffle size={12} />
+              Shuffle
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handlePlayAll}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono text-white cursor-pointer"
+              style={{ backgroundColor: color }}
+            >
+              <Play size={12} />
+              Play All
+            </motion.button>
+          </div>
+        </motion.div>
+
         {/* Track grid */}
         <motion.div
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
           variants={containerVariants}
           initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
+          animate="visible"
+          key={currentMood}
         >
-          {displayTracks.map((track) => {
-            const isCurrentTrack = currentTrack?.id === track.id;
-            return (
-              <motion.div
-                key={track.id}
-                variants={cardVariants}
-                whileHover={{ y: -4 }}
-                className="glass rounded-2xl overflow-hidden group cursor-pointer"
-                style={
-                  isCurrentTrack
-                    ? {
-                        borderColor: `${color}60`,
-                        boxShadow: `0 0 20px ${color}20`,
-                      }
-                    : {}
-                }
-                onClick={() => handlePlay(track.id)}
-              >
-                <div className="relative aspect-square overflow-hidden">
-                  <img
-                    src={track.albumArt}
-                    alt={track.title}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <motion.div
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      className="w-14 h-14 rounded-full flex items-center justify-center"
-                      style={{ backgroundColor: color }}
-                    >
-                      {isCurrentTrack && isPlaying ? (
-                        <Pause size={24} className="text-white" />
-                      ) : (
-                        <Play size={24} className="text-white ml-1" />
-                      )}
-                    </motion.div>
-                  </div>
-                </div>
+          <AnimatePresence mode="popLayout">
+            {displayTracks.map((track) => {
+              const isCurrentTrack = currentTrack?.id === track.id;
+              const isFav = favorites.has(track.id);
+              return (
+                <motion.div
+                  key={track.id}
+                  variants={cardVariants}
+                  layout
+                  whileHover={{ y: -4 }}
+                  className="glass rounded-2xl overflow-hidden group cursor-pointer relative"
+                  style={
+                    isCurrentTrack
+                      ? {
+                          borderColor: `${color}60`,
+                          boxShadow: `0 0 20px ${color}20`,
+                        }
+                      : {}
+                  }
+                  onClick={() => handlePlay(track.id)}
+                >
+                  {/* Favorite button */}
+                  <motion.button
+                    whileTap={{ scale: 0.8 }}
+                    onClick={(e) => toggleFavorite(e, track.id)}
+                    className="absolute top-2 right-2 z-20 w-8 h-8 rounded-full glass flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                  >
+                    <Heart
+                      size={14}
+                      className={isFav ? "text-red-400 fill-red-400" : "text-white/70"}
+                    />
+                  </motion.button>
 
-                <div className="p-4">
-                  <h3 className="font-heading font-bold text-sm truncate">
-                    {track.title}
-                  </h3>
-                  <p className="text-xs text-muted-foreground font-mono mt-1 truncate">
-                    {track.artist}
-                  </p>
-                  {track.description && (
-                    <p className="text-xs text-muted-foreground/70 mt-1 line-clamp-2 leading-relaxed">
-                      {track.description}
+                  <AlbumArt
+                    track={track}
+                    color={color}
+                    isCurrentTrack={isCurrentTrack}
+                    isPlaying={isPlaying}
+                  />
+
+                  <div className="p-4">
+                    <h3 className="font-heading font-bold text-sm truncate">
+                      {track.title}
+                    </h3>
+                    <p className="text-xs text-muted-foreground font-mono mt-1 truncate">
+                      {track.artist}
                     </p>
-                  )}
-                  <p className="text-xs font-mono mt-2" style={{ color }}>
-                    {formatDuration(track.duration)}
-                  </p>
-                </div>
-              </motion.div>
-            );
-          })}
+                    {track.description && (
+                      <p className="text-xs text-muted-foreground/70 mt-1 line-clamp-2 leading-relaxed">
+                        {track.description}
+                      </p>
+                    )}
+                    <p className="text-xs font-mono mt-2" style={{ color }}>
+                      {formatDuration(track.duration)}
+                    </p>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
         </motion.div>
       </div>
     </section>

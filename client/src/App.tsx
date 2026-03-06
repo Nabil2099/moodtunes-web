@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Toaster } from "react-hot-toast";
 import toast from "react-hot-toast";
 import FloatingNotes from "@/components/FloatingNotes";
@@ -8,13 +8,32 @@ import MoodInput from "@/components/MoodInput";
 import QuestionnaireModal from "@/components/QuestionnaireModal";
 import RecommendationsGrid from "@/components/RecommendationsGrid";
 import MiniPlayer from "@/components/MiniPlayer";
+import MoodHistory from "@/components/MoodHistory";
+import type { MoodEntry } from "@/components/MoodHistory";
 import { useMoodStore, useTracksStore } from "@/store";
 import { getTimeMood, getTracks } from "@/lib/api";
 
 export default function App() {
   const [showQuestionnaire, setShowQuestionnaire] = useState(false);
-  const { setMoodResult, setAnalyzing } = useMoodStore();
+  const [moodHistory, setMoodHistory] = useState<MoodEntry[]>([]);
+  const { setMoodResult, setAnalyzing, moodResult, method } = useMoodStore();
   const { setTracks, setLoading } = useTracksStore();
+
+  // Track mood history
+  useEffect(() => {
+    if (moodResult && method) {
+      setMoodHistory((prev) => [
+        {
+          id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          mood: moodResult.mood,
+          method,
+          confidence: moodResult.confidence,
+          timestamp: Date.now(),
+        },
+        ...prev.slice(0, 19), // keep last 20
+      ]);
+    }
+  }, [moodResult, method]);
 
   const handleTextEntry = useCallback(() => {
     document.getElementById("mood-input")?.scrollIntoView({ behavior: "smooth" });
@@ -71,6 +90,11 @@ export default function App() {
       />
 
       <RecommendationsGrid />
+
+      <MoodHistory
+        entries={moodHistory}
+        onClear={() => setMoodHistory([])}
+      />
 
       <MiniPlayer />
 
