@@ -95,7 +95,7 @@ export default function MiniPlayer() {
       <AnimatePresence>
         {!isExpanded && (
           <motion.div
-            className="fixed bottom-0 left-0 right-0 z-40 glass border-t border-white/10"
+            className="fixed bottom-0 left-0 right-0 z-40 glass border-t border-white/10 safe-bottom"
             initial={{ y: 100 }}
             animate={{ y: 0 }}
             exit={{ y: 100 }}
@@ -112,7 +112,7 @@ export default function MiniPlayer() {
               />
             </div>
 
-            <div className="flex items-center gap-3 px-4 py-3 max-w-6xl mx-auto">
+            <div className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 max-w-6xl mx-auto">
               {/* Album art */}
               <motion.div
                 className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0"
@@ -142,11 +142,11 @@ export default function MiniPlayer() {
               </div>
 
               {/* Controls */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 sm:gap-2">
                 <motion.button
                   whileTap={{ scale: 0.9 }}
                   onClick={previous}
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground"
+                  className="w-9 h-9 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground"
                 >
                   <SkipBack size={16} />
                 </motion.button>
@@ -154,7 +154,7 @@ export default function MiniPlayer() {
                 <motion.button
                   whileTap={{ scale: 0.9 }}
                   onClick={togglePlay}
-                  className="w-10 h-10 rounded-full flex items-center justify-center"
+                  className="w-11 h-11 sm:w-10 sm:h-10 rounded-full flex items-center justify-center"
                   style={{ backgroundColor: color }}
                 >
                   {isPlaying ? (
@@ -167,7 +167,7 @@ export default function MiniPlayer() {
                 <motion.button
                   whileTap={{ scale: 0.9 }}
                   onClick={next}
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground"
+                  className="w-9 h-9 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground"
                 >
                   <SkipForward size={16} />
                 </motion.button>
@@ -175,7 +175,7 @@ export default function MiniPlayer() {
                 <motion.button
                   whileTap={{ scale: 0.9 }}
                   onClick={() => setExpanded(true)}
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground"
+                  className="w-9 h-9 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground"
                 >
                   <ChevronUp size={16} />
                 </motion.button>
@@ -204,7 +204,7 @@ export default function MiniPlayer() {
             />
 
             {/* Header */}
-            <div className="relative z-10 flex items-center justify-between px-6 pt-6 pb-2">
+            <div className="relative z-10 flex items-center justify-between px-4 sm:px-6 pt-4 sm:pt-6 pb-2 safe-top">
               <motion.button
                 whileTap={{ scale: 0.9 }}
                 onClick={() => setExpanded(false)}
@@ -224,10 +224,10 @@ export default function MiniPlayer() {
             </div>
 
             {/* Main content */}
-            <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 overflow-hidden">
+            <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 sm:px-6 overflow-hidden">
               {/* Album art */}
               <motion.div
-                className="w-64 h-64 sm:w-72 sm:h-72 rounded-3xl overflow-hidden shadow-2xl mb-8"
+                className="w-48 h-48 sm:w-64 sm:h-64 md:w-72 md:h-72 rounded-3xl overflow-hidden shadow-2xl mb-6 sm:mb-8"
                 style={{ boxShadow: `0 20px 60px ${color}30` }}
                 animate={
                   isPlaying
@@ -250,13 +250,13 @@ export default function MiniPlayer() {
 
               {/* Track info */}
               <motion.div
-                className="w-full max-w-sm text-center mb-6"
+                className="w-full max-w-sm text-center mb-4 sm:mb-6 px-2"
                 key={currentTrack.id}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
               >
-                <h3 className="font-heading text-2xl font-bold mb-1 truncate">
+                <h3 className="font-heading text-xl sm:text-2xl font-bold mb-1 truncate">
                   {currentTrack.title}
                 </h3>
                 <p className="text-muted-foreground font-mono text-sm mb-2">
@@ -270,7 +270,7 @@ export default function MiniPlayer() {
               </motion.div>
 
               {/* Progress bar — clickable to seek */}
-              <div className="w-full max-w-sm mb-6">
+              <div className="w-full max-w-sm mb-4 sm:mb-6 px-2">
                 <div
                   className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden cursor-pointer"
                   onClick={handleSeek}
@@ -290,7 +290,7 @@ export default function MiniPlayer() {
               </div>
 
               {/* Controls */}
-              <div className="flex items-center gap-6">
+              <div className="flex items-center gap-4 sm:gap-6">
                 <motion.button
                   whileTap={{ scale: 0.9 }}
                   onClick={previous}
@@ -325,7 +325,7 @@ export default function MiniPlayer() {
               </div>
 
               {/* Volume control */}
-              <div className="flex items-center gap-3 mt-6 w-full max-w-[200px]">
+              <div className="flex items-center gap-3 mt-4 sm:mt-6 w-full max-w-[200px] safe-bottom">
                 <motion.button
                   whileTap={{ scale: 0.9 }}
                   onClick={toggleMute}

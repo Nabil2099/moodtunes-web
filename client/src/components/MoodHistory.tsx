@@ -64,7 +64,7 @@ export default function MoodHistory({ entries, onClear }: MoodHistoryProps) {
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-24 right-4 z-30 w-12 h-12 rounded-full glass flex items-center justify-center cursor-pointer group"
+          className="fixed bottom-24 right-4 z-30 w-11 h-11 sm:w-12 sm:h-12 rounded-full glass flex items-center justify-center cursor-pointer group"
         >
           <History size={18} className="text-muted-foreground group-hover:text-foreground transition-colors" />
           <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary text-white text-[10px] flex items-center justify-center font-mono">

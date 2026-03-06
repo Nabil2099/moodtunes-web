@@ -196,7 +196,7 @@ export default function RecommendationsGrid() {
   };
 
   return (
-    <section className="px-4 py-16 relative" id="recommendations">
+    <section className="px-4 py-8 sm:py-16 relative" id="recommendations">
       {/* Background mood gradient */}
       <div
         className="absolute inset-0 opacity-10 pointer-events-none transition-colors duration-1000"
@@ -207,7 +207,7 @@ export default function RecommendationsGrid() {
 
       <div className="max-w-6xl mx-auto relative z-10">
         <motion.h2
-          className="font-heading text-2xl sm:text-3xl font-bold text-center mb-8"
+          className="font-heading text-xl sm:text-2xl md:text-3xl font-bold text-center mb-6 sm:mb-8"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
         >
@@ -218,7 +218,7 @@ export default function RecommendationsGrid() {
 
         {/* Mood filter chips */}
         <motion.div
-          className="flex flex-wrap justify-center gap-2 mb-6"
+          className="flex flex-wrap justify-center gap-1.5 sm:gap-2 mb-4 sm:mb-6"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
         >
@@ -228,7 +228,7 @@ export default function RecommendationsGrid() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => handleMoodFilter(mood)}
-              className={`px-4 py-2 rounded-full text-sm font-mono transition-all cursor-pointer ${
+              className={`px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-mono transition-all cursor-pointer ${
                 currentMood === mood
                   ? "text-white"
                   : "glass text-muted-foreground hover:text-foreground"
@@ -249,7 +249,7 @@ export default function RecommendationsGrid() {
 
         {/* Actions bar */}
         <motion.div
-          className="flex items-center justify-between mb-8 px-1"
+          className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mb-6 sm:mb-8 px-1"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.1 }}
@@ -257,44 +257,44 @@ export default function RecommendationsGrid() {
           <p className="text-xs text-muted-foreground font-mono">
             {tracks.length} tracks
           </p>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={handleRefresh}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono glass text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-full text-xs font-mono glass text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
               title="Get new tracks"
             >
-              <RefreshCw size={12} />
+              <RefreshCw size={14} />
               Refresh
             </motion.button>
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={handleShare}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono glass text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-full text-xs font-mono glass text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
               title="Share your playlist"
             >
-              <Share2 size={12} />
+              <Share2 size={14} />
               Share
             </motion.button>
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={handleShuffle}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono glass text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-full text-xs font-mono glass text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
             >
-              <Shuffle size={12} />
+              <Shuffle size={14} />
               Shuffle
             </motion.button>
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={handlePlayAll}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono text-white cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-full text-xs font-mono text-white cursor-pointer"
               style={{ backgroundColor: color }}
             >
-              <Play size={12} />
+              <Play size={14} />
               Play All
             </motion.button>
           </div>
@@ -302,7 +302,7 @@ export default function RecommendationsGrid() {
 
         {/* Track grid */}
         <motion.div
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+          className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4"
           variants={containerVariants}
           initial="hidden"
           animate="visible"
@@ -333,7 +333,7 @@ export default function RecommendationsGrid() {
                   <motion.button
                     whileTap={{ scale: 0.8 }}
                     onClick={(e) => toggleFavorite(e, track.id)}
-                    className="absolute top-2 right-2 z-20 w-8 h-8 rounded-full glass flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                    className="absolute top-2 right-2 z-20 w-9 h-9 sm:w-8 sm:h-8 rounded-full glass flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                   >
                     <Heart
                       size={14}
@@ -348,8 +348,8 @@ export default function RecommendationsGrid() {
                     isPlaying={isPlaying}
                   />
 
-                  <div className="p-4">
-                    <h3 className="font-heading font-bold text-sm truncate">
+                  <div className="p-3 sm:p-4">
+                    <h3 className="font-heading font-bold text-xs sm:text-sm truncate">
                       {track.title}
                     </h3>
                     <p className="text-xs text-muted-foreground font-mono mt-1 truncate">

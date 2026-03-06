@@ -44,7 +44,7 @@ export default function MoodInput() {
   return (
     <section
       id="mood-input"
-      className="min-h-[60vh] flex flex-col items-center justify-center px-4 py-16"
+      className="min-h-[50vh] sm:min-h-[60vh] flex flex-col items-center justify-center px-4 py-8 sm:py-16"
     >
       <motion.h2
         className="font-heading text-2xl sm:text-3xl font-bold text-center mb-8"
@@ -68,7 +68,7 @@ export default function MoodInput() {
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder="I'm feeling peaceful and grateful today..."
-            className="w-full h-36 p-6 rounded-2xl glass resize-none text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 font-mono text-sm sm:text-base transition-shadow"
+            className="w-full h-28 sm:h-36 p-4 sm:p-6 rounded-2xl glass resize-none text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 font-mono text-sm sm:text-base transition-shadow"
             style={{
               boxShadow: text
                 ? "0 0 40px rgba(124, 106, 247, 0.15)"

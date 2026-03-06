@@ -118,7 +118,7 @@ export default function App() {
       <div className="h-20" />
 
       <Toaster
-        position="top-right"
+        position="top-center"
         toastOptions={{
           style: {
             background: "rgba(20, 20, 30, 0.95)",

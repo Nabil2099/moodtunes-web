@@ -69,10 +69,11 @@ export default function SearchBar() {
           setIsOpen(true);
           setTimeout(() => inputRef.current?.focus(), 100);
         }}
-        className="flex items-center gap-2 px-4 py-2 rounded-full glass text-sm font-mono text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+        className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-full glass text-xs sm:text-sm font-mono text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
       >
         <Search size={14} />
-        Search songs...
+        <span className="hidden sm:inline">Search songs...</span>
+        <span className="sm:hidden">Search</span>
       </motion.button>
 
       {/* Search overlay */}
@@ -90,10 +91,10 @@ export default function SearchBar() {
               onClick={handleClose}
             />
 
-            <div className="relative z-10 w-full max-w-2xl mx-auto mt-20 px-4">
+            <div className="relative z-10 w-full max-w-2xl mx-auto mt-4 sm:mt-20 px-4 safe-top">
               {/* Search input */}
               <form onSubmit={handleSearch}>
-                <div className="flex items-center gap-3 glass rounded-2xl px-5 py-4">
+                <div className="flex items-center gap-3 glass rounded-2xl px-4 sm:px-5 py-3 sm:py-4">
                   {isSearching ? (
                     <Loader2 size={20} className="text-muted-foreground animate-spin" />
                   ) : (
@@ -128,7 +129,7 @@ export default function SearchBar() {
               <AnimatePresence>
                 {results.length > 0 && (
                   <motion.div
-                    className="mt-3 glass rounded-2xl overflow-hidden max-h-[60vh] overflow-y-auto"
+                    className="mt-3 glass rounded-2xl overflow-hidden max-h-[70vh] sm:max-h-[60vh] overflow-y-auto"
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
@@ -154,7 +155,7 @@ export default function SearchBar() {
                       return (
                         <motion.div
                           key={track.id}
-                          className={`flex items-center gap-3 px-5 py-3 hover:bg-white/5 cursor-pointer transition-colors ${isCurrentTrack ? "bg-white/5" : ""}`}
+                          className={`flex items-center gap-3 px-4 sm:px-5 py-3.5 sm:py-3 hover:bg-white/5 cursor-pointer transition-colors ${isCurrentTrack ? "bg-white/5" : ""}`}
                           onClick={() => handlePlayTrack(track)}
                           whileTap={{ scale: 0.99 }}
                         >

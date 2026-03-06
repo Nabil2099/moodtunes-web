@@ -58,12 +58,12 @@ export default function HeroSection({
   const actions = { onTextEntry, onQuestionnaire, onTimeDetect };
 
   return (
-    <section className="relative min-h-screen flex flex-col items-center justify-center px-4 pt-24 pb-20">
+    <section className="relative min-h-screen flex flex-col items-center justify-center px-4 pt-10 pb-10 sm:pt-24 sm:pb-20">
       {/* Logo mark */}
       <motion.img
         src="/logo.svg"
         alt=""
-        className="w-16 h-16 mb-6"
+        className="w-12 h-12 sm:w-16 sm:h-16 mb-4 sm:mb-6"
         initial={{ opacity: 0, scale: 0.5 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.6, ease: "easeOut" }}
@@ -123,7 +123,7 @@ export default function HeroSection({
               whileHover={{ scale: 1.03, y: -4 }}
               whileTap={{ scale: 0.98 }}
               onClick={actions[card.action]}
-              className={`glass rounded-2xl p-6 text-left cursor-pointer bg-gradient-to-b ${card.gradient} transition-shadow hover:shadow-lg hover:shadow-primary/10 group`}
+              className={`glass rounded-2xl p-4 sm:p-6 text-left cursor-pointer bg-gradient-to-b ${card.gradient} transition-shadow hover:shadow-lg hover:shadow-primary/10 group`}
             >
               <div
                 className="w-12 h-12 rounded-xl flex items-center justify-center mb-4 transition-colors"

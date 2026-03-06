@@ -126,7 +126,7 @@ export default function QuestionnaireModal({
 
           {/* Modal */}
           <motion.div
-            className="relative glass rounded-3xl p-6 sm:p-8 w-full max-w-md z-10"
+            className="relative glass rounded-2xl sm:rounded-3xl p-5 sm:p-8 w-full max-w-md z-10"
             initial={{ scale: 0.9, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -161,7 +161,7 @@ export default function QuestionnaireModal({
                 exit={{ x: -50, opacity: 0 }}
                 transition={{ duration: 0.3 }}
               >
-                <h3 className="font-heading text-xl font-bold mb-6">
+                <h3 className="font-heading text-lg sm:text-xl font-bold mb-4 sm:mb-6">
                   {questions[step].question}
                 </h3>
 
@@ -172,10 +172,10 @@ export default function QuestionnaireModal({
                       whileHover={{ scale: 1.04 }}
                       whileTap={{ scale: 0.96 }}
                       onClick={() => handleAnswer(opt.emoji)}
-                      className="glass rounded-xl p-4 flex flex-col items-center gap-2 hover:bg-white/10 transition-colors cursor-pointer"
+                      className="glass rounded-xl p-3 sm:p-4 flex flex-col items-center gap-1.5 sm:gap-2 hover:bg-white/10 transition-colors cursor-pointer"
                     >
-                      <span className="text-3xl">{opt.emoji}</span>
-                      <span className="text-xs font-mono text-muted-foreground text-center">
+                      <span className="text-2xl sm:text-3xl">{opt.emoji}</span>
+                      <span className="text-[10px] sm:text-xs font-mono text-muted-foreground text-center">
                         {opt.label}
                       </span>
                     </motion.button>
