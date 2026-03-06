@@ -85,6 +85,12 @@ export default function QuestionnaireModal({
         const tracks = await getTracks(result.mood);
         setTracks(tracks);
         onClose();
+
+        setTimeout(() => {
+          document
+            .getElementById("recommendations")
+            ?.scrollIntoView({ behavior: "smooth" });
+        }, 200);
       } catch {
         toast.error("Failed to process questionnaire");
         setAnalyzing(false);

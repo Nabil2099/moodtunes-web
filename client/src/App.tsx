@@ -12,12 +12,16 @@ import MoodHistory from "@/components/MoodHistory";
 import type { MoodEntry } from "@/components/MoodHistory";
 import { useMoodStore, useTracksStore } from "@/store";
 import { getTimeMood, getTracks } from "@/lib/api";
+import { MOOD_COLORS } from "@/types";
+import useKeyboardShortcuts from "@/hooks/useKeyboardShortcuts";
 
 export default function App() {
   const [showQuestionnaire, setShowQuestionnaire] = useState(false);
   const [moodHistory, setMoodHistory] = useState<MoodEntry[]>([]);
-  const { setMoodResult, setAnalyzing, moodResult, method } = useMoodStore();
+  const { setMoodResult, setAnalyzing, moodResult, method, currentMood } = useMoodStore();
   const { setTracks, setLoading } = useTracksStore();
+
+  useKeyboardShortcuts();
 
   // Track mood history
   useEffect(() => {
@@ -65,8 +69,20 @@ export default function App() {
     }
   }, [setAnalyzing, setMoodResult, setLoading, setTracks]);
 
+  const moodColor = currentMood ? MOOD_COLORS[currentMood] : null;
+
   return (
     <div className="relative min-h-screen">
+      {/* Ambient mood background glow */}
+      {moodColor && (
+        <div
+          className="fixed inset-0 pointer-events-none z-0 transition-opacity duration-1000"
+          style={{
+            background: `radial-gradient(ellipse at 50% 0%, ${moodColor}12 0%, transparent 60%), radial-gradient(ellipse at 80% 100%, ${moodColor}08 0%, transparent 50%)`,
+          }}
+        />
+      )}
+
       <FloatingNotes />
 
       <Header

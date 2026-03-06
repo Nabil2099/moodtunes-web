@@ -7,6 +7,16 @@ const router = Router();
 
 const VALID_MOODS: Mood[] = ["happy", "sad", "energetic", "calm", "focused"];
 
+// Fisher-Yates shuffle — returns a new shuffled array
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 // GET /api/tracks?mood=calm
 router.get(
   "/",
@@ -22,9 +32,10 @@ router.get(
 
     if (mood) {
       const filtered = mockTracks.filter((t) => t.mood === mood);
-      res.json(filtered);
+      // Shuffle so each request returns a different order
+      res.json(shuffle(filtered));
     } else {
-      res.json(mockTracks);
+      res.json(shuffle(mockTracks));
     }
   }
 );

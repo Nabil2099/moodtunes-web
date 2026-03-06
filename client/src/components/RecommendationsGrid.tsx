@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Pause, Shuffle, Heart, Music } from "lucide-react";
+import { Play, Pause, Shuffle, Heart, Music, Share2, RefreshCw } from "lucide-react";
 import { useTracksStore, usePlayerStore, useMoodStore } from "@/store";
-import { Mood, Track, MOOD_COLORS, MOOD_LABELS } from "@/types";
+import { Mood, Track, MOOD_COLORS, MOOD_LABELS, MOOD_EMOJIS } from "@/types";
 import { formatDuration } from "@/lib/utils";
 import { getTracks } from "@/lib/api";
 import toast from "react-hot-toast";
@@ -87,12 +87,29 @@ export default function RecommendationsGrid() {
   const { tracks, setTracks, setLoading } = useTracksStore();
   const { currentMood, setMood } = useMoodStore();
   const { play, currentTrack, isPlaying, togglePlay } = usePlayerStore();
-  const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const [favorites, setFavorites] = useState<Set<string>>(() => {
+    try {
+      const saved = localStorage.getItem("moodtunes-favorites");
+      return saved ? new Set(JSON.parse(saved)) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
+
+  // Persist favorites to localStorage
+  useEffect(() => {
+    localStorage.setItem(
+      "moodtunes-favorites",
+      JSON.stringify([...favorites])
+    );
+  }, [favorites]);
 
   if (!currentMood || tracks.length === 0) return null;
 
-  const displayTracks = tracks.slice(0, 12);
+  const displayTracks = tracks.slice(0, 16);
   const color = MOOD_COLORS[currentMood];
+  // Unique key from first track ID to force re-animation on fresh data
+  const gridKey = `${currentMood}-${tracks[0]?.id ?? ""}`;
 
   const handleMoodFilter = async (mood: Mood) => {
     setMood(mood);
@@ -145,6 +162,36 @@ export default function RecommendationsGrid() {
     if (tracks.length > 0) {
       play(tracks[0], tracks);
       toast.success(`Playing ${tracks.length} tracks`);
+    }
+  };
+
+  const handleRefresh = async () => {
+    if (!currentMood) return;
+    setLoading(true);
+    try {
+      const newTracks = await getTracks(currentMood);
+      setTracks(newTracks);
+      toast.success("Fresh tracks loaded!");
+    } catch {
+      toast.error("Failed to refresh tracks");
+      setLoading(false);
+    }
+  };
+
+  const handleShare = async () => {
+    const emoji = MOOD_EMOJIS[currentMood];
+    const label = MOOD_LABELS[currentMood];
+    const trackList = displayTracks
+      .slice(0, 5)
+      .map((t) => `  🎵 ${t.title} — ${t.artist}`)
+      .join("\n");
+    const text = `${emoji} I'm feeling ${label} right now!\n\nMy MoodTunes playlist:\n${trackList}\n\n🎧 moodtunes.app`;
+
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success("Playlist copied to clipboard!");
+    } catch {
+      toast("Couldn't copy to clipboard", { icon: "📋" });
     }
   };
 
@@ -214,6 +261,26 @@ export default function RecommendationsGrid() {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
+              onClick={handleRefresh}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono glass text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              title="Get new tracks"
+            >
+              <RefreshCw size={12} />
+              Refresh
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleShare}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono glass text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              title="Share your playlist"
+            >
+              <Share2 size={12} />
+              Share
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={handleShuffle}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono glass text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
             >
@@ -239,7 +306,7 @@ export default function RecommendationsGrid() {
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          key={currentMood}
+          key={gridKey}
         >
           <AnimatePresence mode="popLayout">
             {displayTracks.map((track) => {

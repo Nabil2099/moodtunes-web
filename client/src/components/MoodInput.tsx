@@ -29,6 +29,12 @@ export default function MoodInput() {
       setLoading(true);
       const tracks = await getTracks(result.mood);
       setTracks(tracks);
+
+      setTimeout(() => {
+        document
+          .getElementById("recommendations")
+          ?.scrollIntoView({ behavior: "smooth" });
+      }, 200);
     } catch {
       toast.error("Failed to analyze mood. Please try again.");
       setAnalyzing(false);

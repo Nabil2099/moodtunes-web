@@ -27,7 +27,10 @@ export async function getTimeMood(): Promise<MoodResult> {
 
 export async function getTracks(mood?: string): Promise<Track[]> {
   const { data } = await api.get<Track[]>("/tracks", {
-    params: mood ? { mood } : {},
+    params: {
+      ...(mood ? { mood } : {}),
+      _t: Date.now(), // cache-bust so each request gets fresh shuffle
+    },
   });
   return data;
 }
